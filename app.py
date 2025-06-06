@@ -106,7 +106,7 @@ with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
         query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
     with gr.Tab("⚙️ Future Features"):
-        gr.Markdown("Placeholder area for upcoming functionalities.")
+        gr.Markdown("Placeholder area for upcoming functionalities")
         feature = gr.Textbox(label="Feature to Check")
         feature_btn = gr.Button("Check Feature Status")
         feature_out = gr.Textbox(label="Status")
