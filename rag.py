@@ -1,6 +1,6 @@
-from ast import In
 import os
 import requests
+from pprint import pprint
 class VectaraAPIError(Exception):
     """Custom exception for Vectara API errors."""
     pass
@@ -18,6 +18,20 @@ def load_environment_variables():
     load_dotenv()
     if not os.getenv("VECTARA_API_KEY"):
         raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
+
+
+def is_allowed_filetype(suffix: str):
+    # Commonmark / Markdown (md extension).
+    # PDF/A (pdf).
+    # Open Office (odt).
+    # Microsoft Word (doc, docx).
+    # Microsoft Powerpoint (ppt, pptx).
+    # Text files (txt).
+    # HTML files (.html).
+    # LXML files (.lxml).
+    # RTF files (.rtf).
+    # ePUB files (.epub).
+    return suffix in [".pdf", ".odt", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".html", ".lxml", ".rtf", ".epub"]
 
 def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str) :
     """
@@ -70,46 +84,105 @@ def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str) :
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred during PDF upload: {e}") from e
 
-
-def retrieve_chunks(query: str) -> list[str]:
+# See https://docs.vectara.com/docs/rest-api/query-corpus
+def retrieve_chunks(query: str) -> tuple[list[str], str]:
     """
-    Placeholder: Retrieves relevant chunks from the Vectara corpus based on the query.
+    Retrieves relevant chunks and a generated summary from the Vectara corpus based on the query.
 
     Args:
         query (str): The user's query.
 
     Returns:
-        list[str]: A list of retrieved text chunks.
+        tuple[list[str], str]: A tuple containing a list of retrieved text chunks and the llm generation.
     """
-    print(f"Retrieving chunks for query: '{query}'")
-    # TODO: Implement actual Vectara query API call here
-    # This will involve calling Vectara's query endpoint with the user's query
-    # and processing the response to extract relevant text chunks.
-    retrieved_chunks = [
-        "Placeholder chunk 1: Information related to " + query,
-        "Placeholder chunk 2: More details about " + query
-    ]
-    return retrieved_chunks
+    CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
+    api_key = os.getenv("VECTARA_API_KEY")
+    if not api_key:
+        raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
+
+    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/query"
+    headers = {
+        "Accept": "application/json",
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "query": query,
+        "search": {
+            "limit": 10,  # Number of search results to retrieve
+            # "reranker": {
+            #     "type": "customer_reranker",
+            #     "reranker_name": "Rerank_Multilingual_v1",
+            #     "limit": 0,
+            #     "cutoff": 0,
+            #     "include_context": True
+            # }
+        },
+        "generation": {
+            "generation_preset_name": "mockingbird-2.0", # Using Mockingbird for RAG
+            "max_used_search_results": 5,
+            "response_language": "eng",
+            "enable_factual_consistency_score": True,
+            # "prompt_template": "[\n  {\"role\": \"system\", \"content\": \"You are a helpful search assistant.\"},\n  #foreach ($qResult in $vectaraQueryResults)\n     {\"role\": \"user\", \"content\": \"Given the $vectaraIdxWord[$foreach.index] search result.\"},\n     {\"role\": \"assistant\", \"content\": \"${qResult.getText()}\" },\n  #end\n  {\"role\": \"user\", \"content\": \"Generate a summary for the query '${vectaraQuery}' based on the above results.\"}\n]\n",
+        },
+        # NOTE: We can stream response
+        "stream_response": False,
+        "save_history": True,
+        "intelligent_query_rewriting": False
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        response_json = response.json()
+        pprint(response_json)
+        
+        retrieved_chunks = []
+
+        # Extract search results (chunks)
+        # The structure of the response has changed, adapt extraction logic
+        if "search_results" in response_json:
+            for search_result in response_json["search_results"]:
+                if "text" in search_result:
+                    retrieved_chunks.append(search_result["text"])
+        
+        
+        # Extract generated summary
+        if "summary" in response_json: # Changed from generation_response to summary
+            generated_response = response_json["summary"] # Changed from generation_response["text"] to summary
+            print(f"Factual Consistency Score: {response_json.get('factual_consistency_score')}") # Moved factual_consistency_score to top level
+        else:
+            generated_response = ""
+            print("No generated response found in the Vectara response.")
+        return retrieved_chunks, generated_response
+
+    except requests.exceptions.RequestException as e:
+        raise VectaraAPIError(f"Error querying Vectara: {e}") from e
+    except Exception as e:
+        raise VectaraAPIError(f"An unexpected error occurred during Vectara query: {e}") from e
 
 
-def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str]) -> str:
+# This is still a placeholder
+def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str], summary: str) -> str:
     """
-    Placeholder: Generates an LLM response based on chat state and retrieved chunks.
+    Generates an LLM response based on chat state, retrieved chunks, and a generated summary.
+    In this updated version, the summary from Vectara is directly used as the LLM response.
 
     Args:
-        chat_state (list[dict]): The current conversation history/chat state.
-        retrieved_chunks (list[str]): The chunks retrieved from the RAG system.
+        chat_state (list[dict]): The current conversation history/chat state (not directly used here but kept for signature consistency).
+        retrieved_chunks (list[str]): The chunks retrieved from the RAG system (can be used for additional context if needed).
+        summary (str): The summary generated by Vectara's RAG.
 
     Returns:
-        str: The LLM's generated response.
+        str: The LLM's generated response (which is the Vectara summary).
     """
-    print("Generating LLM response...")
-    # TODO: Implement LLM integration here
-    # This will involve sending the chat_state and retrieved_chunks to an LLM (e.g., OpenAI, Llama, etc.)
-    # to generate a coherent and contextually relevant response.
-    context = "\n".join(retrieved_chunks)
-    llm_response = f"Based on the retrieved information:\n{context}\n\nAnd your query, the answer is a placeholder response."
-    return llm_response
+    print("Using Vectara generated summary as LLM response.")
+    if summary:
+        return summary
+    else:
+        # Fallback if for some reason summary is empty, though it shouldn't be with successful RAG
+        context = "\n".join(retrieved_chunks)
+        return f"Based on the retrieved information:\n{context}\n\nNo summary was generated, but here's the raw context."
 
 def test_file_upload():
     # Change filepath
