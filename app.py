@@ -68,6 +68,18 @@ def placeholder(feature_name: str = "unknown") -> str:
     """
     return f"{feature_name} functionality not available yet."  # Replace with dynamic logic later
 
+def handle_file_input(file_path, uploaded_file):
+    if uploaded_file is not None:
+        return f"Uploaded file received: {uploaded_file.name}"
+    elif file_path.strip():
+        path = Path(file_path.strip())
+        if path.exists():
+            return f"File path entered: {file_path}"
+        else:
+            return "Error: The specified file path does not exist."
+    else:
+        return "Please enter a file path or upload a file."
+
 # ---------------------------
 # Gradio UI (Blocks API)
 # ---------------------------
@@ -111,6 +123,15 @@ with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
         feature_btn = gr.Button("Check Feature Status")
         feature_out = gr.Textbox(label="Status")
         feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
+
+    with gr.Tab("🗣️Input File"):
+        gr.Markdown("Input file")
+        with gr.Row():
+            file_path_input = gr.Textbox(label="Enter File Path")
+            file_upload_input = gr.File(label="Upload a File")
+        submit_btn = gr.Button("Submit")
+        output = gr.Textbox(label="Result")
+        submit_btn.click(fn=handle_file_input, inputs=[file_path_input, file_upload_input], outputs=output)
 
 # ---------------------------
 # Launch as MCP Server
