@@ -1,6 +1,19 @@
+import json
+import logging
 import os
 import requests
 from pprint import pprint
+from schemas import UploadResult
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
 class VectaraAPIError(Exception):
     """Custom exception for Vectara API errors."""
     pass
@@ -33,7 +46,18 @@ def is_allowed_filetype(suffix: str):
     # ePUB files (.epub).
     return suffix in [".pdf", ".odt", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".html", ".lxml", ".rtf", ".epub"]
 
-def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str) :
+def save_response_to_file(response_json: dict, filename: str):
+    """
+    Saves the Vectara API response to a JSON file.
+
+    Args:
+        response_json (dict): The Vectara API response.
+        filename (str): The name of the file to save the response to.
+    """
+    with open(filename, "w") as f:
+        json.dump(response_json, f, indent=2)
+
+def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str)  -> UploadResult:
     """
     Uploads a PDF file to Vectara for processing.
 
@@ -76,14 +100,38 @@ def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str) :
     try:
         response = requests.post(url, headers=headers, files=files)
         response.raise_for_status()  # Raise an exception for HTTP errors
-        print("Vectara API response:", response.json())
+        response_json = response.json()
+        
+        result = process_upload_response(response_json)
         # You might want to store some information from the Vectara response
         # in your session object, e.g., document ID.
+        return result
     except requests.exceptions.RequestException as e:
         raise VectaraAPIError(f"Error uploading to Vectara: {e}") from e
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred during PDF upload: {e}") from e
 
+
+def process_upload_response(response_json: dict) -> UploadResult:
+    """
+    Stores 
+
+    Args:
+        response_json (dict): The Vectara API response.
+
+    Returns:
+        UploadResult: The upload result.
+    """
+    log_filename = "upload_results.json"
+    save_response_to_file(response_json, log_filename)
+    logger.info(f"Saved response to file: {log_filename}")
+    # pprint(response_json)
+
+    return UploadResult(
+        id=response_json["id"],
+        metadata=response_json["metadata"],
+        storage_usage=response_json["storage_usage"]
+    )
 # See https://docs.vectara.com/docs/rest-api/query-corpus
 def retrieve_chunks(query: str) -> tuple[list[str], str]:
     """
@@ -136,6 +184,7 @@ def retrieve_chunks(query: str) -> tuple[list[str], str]:
         response.raise_for_status()
         response_json = response.json()
         pprint(response_json)
+        # TODO: Parse Output here
         
         retrieved_chunks = []
 
