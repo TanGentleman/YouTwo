@@ -90,15 +90,17 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
         logging.error(f"Error: The specified file path does not exist: {filepath}")
         return "Error: The uploaded filepath does not exist."
     
+    if not is_allowed_filetype(filepath.suffix):
+        return f"Error: The uploaded filetype {filepath.suffix} is not supported."
+    
     # Obtain the bytes
     with open(filepath, "rb") as file:
         file_contents = file.read()
         
-    if not is_allowed_filetype(filepath.suffix):
-        return f"Error: The uploaded filetype {filepath.suffix} is not supported."
     
-    upload_pdf_to_vectara(file_contents, filepath.name)
-    return f"Uploaded file received: {filepath.name}"
+    upload_result = upload_pdf_to_vectara(file_contents, filepath.name)
+    
+    return f"Uploaded document: {upload_result['id']}"
 
 # ---------------------------
 # Gradio UI (Blocks API)
