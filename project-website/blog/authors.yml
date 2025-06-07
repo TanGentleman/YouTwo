@@ -1,0 +1,23 @@
+tan:
+  name: Tanuj
+  title: Creator
+  url: https://linkedin.com/in/tan
+  image_url: https://avatars.githubusercontent.com/u/125774500
+  page: true
+  socials:
+    linkedin: https://www.linkedin.com/in/tajus/
+    github: https://github.com/TanGentleman
+
+skasula:
+  name: Skasula
+  title: Creator
+  url: https://sebastienlorber.com
+  image_url: https://avatars.githubusercontent.com/u/125774500
+  page: true
+    # customize the url of the author page at /blog/authors/<permalink>
+    # permalink: '/all-sebastien-lorber-articles'
+  # socials:
+    # x: sebastienlorber
+    # linkedin: sebastienlorber
+    # github: skasula
+    # newsletter: https://thisweekinreact.com
