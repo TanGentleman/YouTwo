@@ -59,12 +59,12 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/youtwo-social-card.jpg',
+    image: 'tan-hummingbird.jpeg',
     navbar: {
       title: 'YouTwo RAG Hackathon',
       logo: {
         alt: 'YouTwo Logo',
-        src: '@https://avatars.githubusercontent.com/u/125774500',
+        src: 'https://avatars.githubusercontent.com/u/125774500',
       },
       items: [
         {
