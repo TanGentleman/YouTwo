@@ -73,9 +73,15 @@ export const markdownEmbeddingDoc = v.object({
 
 export default defineSchema({
   // Entity-related tables
-  entities: defineTable(entityDoc),
-  relations: defineTable(relationDoc),
-  knowledge: defineTable(knowledgeDoc),
+  entities: defineTable(entityDoc)
+    .index("by_name", ["name"]),
+  relations: defineTable(relationDoc)
+    .index("by_from", ["from"])
+    .index("by_to", ["to"]),
+    // .index("by_relation_type", ["relationType"]),
+  knowledge: defineTable(knowledgeDoc)
+    .index("by_entity", ["entity"])
+    .index("by_relations", ["relations"]),
   
   // Journal-related tables
   journals: defineTable(journalsDoc),

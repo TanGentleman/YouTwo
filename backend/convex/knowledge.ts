@@ -1,5 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc, Id } from "./_generated/dataModel";
 
 /**
  * Read the entire knowledge graph
@@ -13,134 +14,80 @@ export const readGraph = query({
     // Get all relations
     const relations = await ctx.db.query("relations").collect();
     
-    // Format response
-    const formattedEntities = entities.map((entity) => ({
-      id: entity._id,
-      name: entity.name,
-      entityType: entity.entityType,
-      observations: entity.observations,
-      updatedAt: entity.updatedAt,
-    }));
+    // Create a map of entity IDs to entities for relation lookups
+    const entityMap = new Map<Id<"entities">, Doc<"entities">>();
+    entities.forEach(entity => entityMap.set(entity._id, entity));
     
-    // Create a map of entity IDs to their formatted representation for easier lookups
-    const entityMap = Object.fromEntries(
-      formattedEntities.map(entity => [entity.id, entity])
-    );
-    
-    // Format relations with actual entity names instead of IDs
-    const formattedRelations = relations.map(relation => {
-      const fromEntity = entityMap[relation.from];
-      const toEntity = entityMap[relation.to];
-      
-      return {
+    return {
+      entities: entities.map(entity => ({
+        id: entity._id,
+        name: entity.name,
+        entityType: entity.entityType,
+        observations: entity.observations,
+        updatedAt: entity.updatedAt,
+      })),
+      relations: relations.map(relation => ({
         id: relation._id,
-        from: fromEntity?.name || relation.from,
-        to: toEntity?.name || relation.to,
+        from: entityMap.get(relation.from)?.name || relation.from,
+        to: entityMap.get(relation.to)?.name || relation.to,
         relationType: relation.relationType,
         fromEntityId: relation.from,
         toEntityId: relation.to,
-      };
-    });
-    
-    return {
-      entities: formattedEntities,
-      relations: formattedRelations,
+      })),
     };
   },
 });
 
 /**
- * Search for nodes based on query
+ * Search for nodes based on query.
  */
 export const searchNodes = query({
-  args: {
-    query: v.string(),
-  },
+  args: { query: v.string() },
   handler: async (ctx, args) => {
-    if (!args.query || args.query.trim() === '') {
-      return {
-        entities: [],
-        relations: []
-      };
+    if (!args.query?.trim()) {
+      return { entities: [], relations: [] };
     }
 
     const query = args.query.toLowerCase();
+    const allEntities = await ctx.db.query("entities").collect();
     
-    // Find all entities matching the query
-    const entities = await ctx.db.query("entities").collect();
-    
-    const matchingEntities = entities.filter(entity => {
-      // Match entity name
-      if (entity.name.toLowerCase().includes(query)) {
-        return true;
-      }
-      
-      // Match entity type
-      if (entity.entityType.toLowerCase().includes(query)) {
-        return true;
-      }
-      
-      // Match any observation
-      if (entity.observations.some(obs => 
-        obs.toLowerCase().includes(query)
-      )) {
-        return true;
-      }
-      
-      return false;
-    });
-    
-    if (matchingEntities.length === 0) {
-      return {
-        entities: [],
-        relations: []
-      };
-    }
-    
-    const matchingEntityIds = new Set(matchingEntities.map(e => e._id));
-    
-    // Find relations connected to these entities
-    const relations = await ctx.db.query("relations").collect();
-    const relatedRelations = relations.filter(rel => 
-      matchingEntityIds.has(rel.from) || matchingEntityIds.has(rel.to)
+    const matchingEntities = allEntities.filter(entity => 
+      entity.name.toLowerCase().includes(query) ||
+      entity.entityType.toLowerCase().includes(query) ||
+      entity.observations.some(obs => obs.toLowerCase().includes(query))
     );
+
+    if (matchingEntities.length === 0) {
+      return { entities: [], relations: [] };
+    }
+
+    const matchingIds = new Set(matchingEntities.map(e => e._id));
+    const allRelations = await ctx.db.query("relations").collect();
     
-    // Format the response
-    const formattedEntities = matchingEntities.map(entity => ({
-      id: entity._id,
-      name: entity.name,
-      entityType: entity.entityType,
-      observations: entity.observations,
-      updatedAt: entity.updatedAt,
-    }));
-    
-    // Create a map of entity IDs to their formatted representation for easier lookups
-    const entityMap = Object.fromEntries(
-      entities.map(entity => [entity._id, {
+    const relatedRelations = allRelations.filter(rel => 
+      matchingIds.has(rel.from) || matchingIds.has(rel.to)
+    );
+
+    // Create a map of entity IDs to entities for relation lookups
+    const entityMap = new Map<Id<"entities">, Doc<"entities">>();
+    allEntities.forEach(entity => entityMap.set(entity._id, entity));
+
+    return {
+      entities: matchingEntities.map(entity => ({
         id: entity._id,
         name: entity.name,
         entityType: entity.entityType,
-      }])
-    );
-    
-    // Format relations with actual entity names instead of IDs
-    const formattedRelations = relatedRelations.map(relation => {
-      const fromEntity = entityMap[relation.from];
-      const toEntity = entityMap[relation.to];
-      
-      return {
+        observations: entity.observations,
+        updatedAt: entity.updatedAt,
+      })),
+      relations: relatedRelations.map(relation => ({
         id: relation._id,
-        from: fromEntity?.name || relation.from,
-        to: toEntity?.name || relation.to,
+        from: entityMap.get(relation.from)?.name || relation.from,
+        to: entityMap.get(relation.to)?.name || relation.to,
         relationType: relation.relationType,
         fromEntityId: relation.from,
         toEntityId: relation.to,
-      };
-    });
-    
-    return {
-      entities: formattedEntities,
-      relations: formattedRelations,
+      })),
     };
   },
 });
@@ -148,82 +95,48 @@ export const searchNodes = query({
 /**
  * Retrieve specific nodes by name
  */
-
-// Note: Change this to run a loop over the names
 export const openNodes = query({
-  args: {
-    names: v.array(v.string()),
-  },
+  args: { names: v.array(v.string()) },
   handler: async (ctx, args) => {
-    if (!args.names || args.names.length === 0) {
-      return {
-        entities: [],
-        relations: []
-      };
+    if (!args.names?.length) {
+      return { entities: [], relations: [] };
     }
     
     const nameSet = new Set(args.names);
-    
-    // Find the requested entities by name
-    const allEntities = await ctx.db.query("entities")
-      .collect();
-    
-    const entities = allEntities.filter(entity => nameSet.has(entity.name));
+    const allEntities = await ctx.db.query("entities").collect();
+    const entities = allEntities.filter(e => nameSet.has(e.name));
     
     if (entities.length === 0) {
-      return {
-        entities: [],
-        relations: []
-      };
+      return { entities: [], relations: [] };
     }
-    
-    // Get IDs of the found entities
-    const entityIds = entities.map(e => e._id);
-    const entityIdSet = new Set(entityIds);
-    
-    // Find relations between these entities
-    const allRelations = await ctx.db.query("relations")
-      .collect();
 
-    const relations = allRelations.filter(relation => 
-      entityIdSet.has(relation.from) || entityIdSet.has(relation.to)
+    const entityIds = new Set(entities.map(e => e._id));
+    const allRelations = await ctx.db.query("relations").collect();
+    
+    const relations = allRelations.filter(rel => 
+      entityIds.has(rel.from) || entityIds.has(rel.to)
     );
-    
-    // Format the response
-    const formattedEntities = entities.map(entity => ({
-      id: entity._id,
-      name: entity.name,
-      entityType: entity.entityType,
-      observations: entity.observations,
-      updatedAt: entity.updatedAt,
-    }));
-    
-    // Create a map of entity IDs to their formatted representation for easier lookups
-    const entityMap = Object.fromEntries(
-      entities.map(entity => [entity._id, {
+
+    // Create a map of entity IDs to entities for relation lookups
+    const entityMap = new Map<Id<"entities">, Doc<"entities">>();
+    allEntities.forEach(entity => entityMap.set(entity._id, entity));
+
+    return {
+      entities: entities.map(entity => ({
         id: entity._id,
         name: entity.name,
-      }])
-    );
-    
-    // Format relations with actual entity names instead of IDs
-    const formattedRelations = relations.map(relation => {
-      const fromEntity = entityMap[relation.from];
-      const toEntity = entityMap[relation.to];
-      
-      return {
+        entityType: entity.entityType,
+        observations: entity.observations,
+        updatedAt: entity.updatedAt,
+      })),
+      relations: relations.map(relation => ({
         id: relation._id,
-        from: fromEntity?.name || relation.from,
-        to: toEntity?.name || relation.to,
+        from: entityMap.get(relation.from)?.name || relation.from,
+        to: entityMap.get(relation.to)?.name || relation.to,
         relationType: relation.relationType,
         fromEntityId: relation.from,
         toEntityId: relation.to,
-      };
-    });
-    
-    return {
-      entities: formattedEntities,
-      relations: formattedRelations,
+      })),
     };
   },
-}); 
+});

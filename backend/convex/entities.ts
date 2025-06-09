@@ -21,7 +21,7 @@ export const createEntities = mutation({
       // Check if entity with this name already exists
       const existingEntity = await ctx.db
         .query("entities")
-        .filter((q) => q.eq(q.field("name"), entity.name))
+        .withIndex("by_name", (q) => q.eq("name", entity.name))
         .first();
       
       if (!existingEntity) {
@@ -70,7 +70,7 @@ export const addObservations = mutation({
       // Find the entity
       const entity = await ctx.db
         .query("entities")
-        .filter((q) => q.eq(q.field("name"), item.entityName))
+        .withIndex("by_name", (q) => q.eq("name", item.entityName))
         .first();
       
       if (entity) {
@@ -123,25 +123,25 @@ export const deleteEntities = mutation({
       // Find the entity
       const entity = await ctx.db
         .query("entities")
-        .filter((q) => q.eq(q.field("name"), name))
+        .withIndex("by_name", (q) => q.eq("name", name))
         .first();
       
       if (entity) {
         // Delete all relations where this entity is involved
         const relationsFrom = await ctx.db
           .query("relations")
-          .filter((q) => q.eq(q.field("from"), entity._id))
+          .withIndex("by_from", (q) => q.eq("from", entity._id))
           .collect();
         
         const relationsTo = await ctx.db
           .query("relations")
-          .filter((q) => q.eq(q.field("to"), entity._id))
+          .withIndex("by_to", (q) => q.eq("to", entity._id))
           .collect();
         
         // Delete all related knowledge entries
         const knowledgeEntries = await ctx.db
           .query("knowledge")
-          .filter((q) => q.eq(q.field("entity"), entity._id))
+          .withIndex("by_entity", (q) => q.eq("entity", entity._id))
           .collect();
         
         // Delete all relations and knowledge entries
@@ -194,7 +194,7 @@ export const deleteObservations = mutation({
       // Find the entity
       const entity = await ctx.db
         .query("entities")
-        .filter((q) => q.eq(q.field("name"), item.entityName))
+        .withIndex("by_name", (q) => q.eq("name", item.entityName))
         .first();
       
       if (entity) {
