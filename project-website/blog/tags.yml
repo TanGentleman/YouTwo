@@ -17,3 +17,28 @@ hola:
   label: Hola
   permalink: /hola
   description: Hola tag description
+
+announcement:
+  label: Announcement
+  permalink: /announcement
+  description: Announcement tag description
+
+launch:
+  label: Launch
+  permalink: /launch
+  description: Launch tag description
+
+knowledge-graph:
+  label: Knowledge Graph
+  permalink: /knowledge-graph
+  description: Knowledge Graph tag description
+
+document-processing:
+  label: Document Processing
+  permalink: /document-processing
+  description: Document Processing tag description
+
+second-brain:
+  label: Second Brain
+  permalink: /second-brain
+  description: Second Brain tag description

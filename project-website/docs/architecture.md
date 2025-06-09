@@ -6,6 +6,9 @@ sidebar_position: 2
 
 YouTwo is designed as an extensible, multi-source knowledge platform that can handle a wide variety of data sources and provide intelligent, context-aware responses. The architecture is built for extensibility, allowing for new data sources and processing layers to be added seamlessly.
 
+## Core Document Processing Flow
+![YouTwo Architecture Diagram](../static/img/youtwo-diagram.png)
+
 ## Core Capabilities
 
 ### 1. Multi-Source Data Ingestion
@@ -70,8 +73,3 @@ YouTwo is designed as an extensible, multi-source knowledge platform that can ha
 - **Extensibility Framework:** API-driven integration for new data sources
 
 This architecture positions YouTwo as a personal knowledge platform that evolves with user interactions, transforming raw information into contextual insights while maintaining traceability to original sources. The system is designed to scale from personal journaling to enterprise knowledge management applications.
-
-## Architectural Diagrams
-
-![YouTwo Architecture Diagram](https://agents-mcp-hackathon-graphify.hf.space/gradio_api/file=/tmp/gradio/9a2e219cae62545e140682d785fbde182f1daaf76b810271b9c2222fab6b6b18/tmprqfukncp.png.png)
-
