@@ -1,6 +1,6 @@
 import gradio as gr
 from pathlib import Path
-from rag import is_allowed_filetype, upload_pdf_to_vectara, retrieve_chunks
+from rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
 import logging
 
 # ---------------------------
@@ -56,7 +56,8 @@ def natural_language_handler(query: str) -> str:
     Returns:
         str: Simulated or generated action and result.
     """
-    return f"💬 Got your request: “{query}”. This would be processed by the language understanding agent system."
+    chunks, response = retrieve_chunks(query, limit=5)
+    return f"💬 Got {len(chunks)} chunks for your request: “{query}”. Response: {response}"
 
 
 def placeholder(feature_name: str = "unknown") -> str:
@@ -98,7 +99,7 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
         file_contents = file.read()
         
     
-    upload_result = upload_pdf_to_vectara(file_contents, filepath.name)
+    upload_result = upload_file_to_vectara(file_contents, filepath.name)
     
     return f"Uploaded document: {upload_result['id']}"
 

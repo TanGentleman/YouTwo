@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 import requests
 from pprint import pprint
 from schemas import UploadResult
@@ -57,13 +58,13 @@ def save_response_to_file(response_json: dict, filename: str):
     with open(filename, "w") as f:
         json.dump(response_json, f, indent=2)
 
-def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str)  -> UploadResult:
+def upload_file_to_vectara(file_bytes: bytes, filename: str)  -> UploadResult:
     """
-    Uploads a PDF file to Vectara for processing.
+    Uploads a supported file type to Vectara for processing.
 
     Args:
-        pdf_bytes (bytes): The PDF file content in bytes.
-        filename (str): The name of the PDF file.
+        file_bytes (bytes): The file content in bytes.
+        filename (str): The name of the file.
 
     Returns:
         None
@@ -74,12 +75,13 @@ def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str)  -> UploadResult:
     """
     CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 
-    # Check if pdf_bytes is provided
-    if not pdf_bytes:
-        raise IndexingError("No PDF bytes provided.")
+    # Check if file_bytes is provided
+    if not file_bytes:
+        raise IndexingError("No file bytes provided.")
     
+    suffix = Path(filename).suffix
     # Ensure valid filename
-    if not filename.endswith(".pdf"):
+    if not is_allowed_filetype(suffix):
         raise IndexingError("Invalid filename. Please provide a filename ending with .pdf")
 
     # Replace with your actual corpus_key and API key
@@ -92,10 +94,10 @@ def upload_pdf_to_vectara(pdf_bytes: bytes, filename: str)  -> UploadResult:
         "Accept": "application/json",
         "x-api-key": api_key,
     }
-
     files = {
-        'file': (filename, pdf_bytes, 'application/pdf')
+        'file': (filename, file_bytes)
     }
+
 
     try:
         response = requests.post(url, headers=headers, files=files)
@@ -133,7 +135,7 @@ def process_upload_response(response_json: dict) -> UploadResult:
         storage_usage=response_json["storage_usage"]
     )
 # See https://docs.vectara.com/docs/rest-api/query-corpus
-def retrieve_chunks(query: str) -> tuple[list[str], str]:
+def retrieve_chunks(query: str, limit: int = 10) -> tuple[list[str], str]:
     """
     Retrieves relevant chunks and a generated summary from the Vectara corpus based on the query.
 
@@ -157,7 +159,7 @@ def retrieve_chunks(query: str) -> tuple[list[str], str]:
     payload = {
         "query": query,
         "search": {
-            "limit": 10,  # Number of search results to retrieve
+            "limit": limit,  # Number of search results to retrieve
             # "reranker": {
             #     "type": "customer_reranker",
             #     "reranker_name": "Rerank_Multilingual_v1",
@@ -240,17 +242,17 @@ def test_file_upload():
     from dotenv import load_dotenv
     load_dotenv()
 
-    def is_valid_pdf(path: str) -> bool:
-        """Check if the path is a valid pdf."""
-        return Path(path).expanduser().exists() and Path(path).expanduser().suffix == ".pdf"
-    
-    if not is_valid_pdf(FILEPATH):
-        raise IndexingError(f"File {FILEPATH} does not exist or is not a PDF.")
-    
     try:
         pdf_path = Path(FILEPATH).expanduser()
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
-        upload_pdf_to_vectara(pdf_bytes, pdf_path.name)
+        upload_file_to_vectara(pdf_bytes, pdf_path.name)
     except Exception as e:
         raise IndexingError(f"Error occurred while uploading PDF: {e}")
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    chunks, summary = retrieve_chunks("What is the main idea of the document?")
+    print(chunks)
+    print(summary)
