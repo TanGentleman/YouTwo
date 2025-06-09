@@ -73,19 +73,5 @@ This architecture positions YouTwo as a personal knowledge platform that evolves
 
 ## Architectural Diagrams
 
-Here are the diagrams illustrating the YouTwo architecture:
+![YouTwo Architecture Diagram](https://agents-mcp-hackathon-graphify.hf.space/gradio_api/file=/tmp/gradio/9a2e219cae62545e140682d785fbde182f1daaf76b810271b9c2222fab6b6b18/tmprqfukncp.png.png)
 
-### 1. Data Flow Process Diagram
-Illustrates how data moves from ingestion through processing to retrieval.
-
-### 2. Multi-Source Concept Map
-Shows the relationships between different data sources and processing layers.
-![Concept Map](https://agents-mcp-hackathon-graphify.hf.space/gradio_api/file=/tmp/gradio/70117c4fb450aa752b030edac91e4f45f47b20e8572126a814f2daca34266360/tmplaqnae2u.png.png)
-
-### 3. System Architecture Synoptic Chart
-Details the backend functions and agent interaction system.
-![System Architecture](https://agents-mcp-hackathon-graphify.hf.space/gradio_api/file=/tmp/gradio/2afb87456c19b8f2f63ed7fa3f9ebead3cfcbe78869b9ad30e61ebb83f3e0dcc/tmpzi0i3s9r.png.png)
-
-### 4. Database Schema Visualization
-Provides an overview of the Convex database structure.
-![Database Schema](https://agents-mcp-hackathon-graphify.hf.space/gradio_api/file=/tmp/gradio/2d350466b88f45f0a8811698ca023ccbed2e299fe92b475310aed95c9d764c07/tmp4lrghmfz.png.png) 

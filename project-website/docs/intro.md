@@ -2,46 +2,67 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# YouTwo: Document Processing Flow
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Welcome to YouTwo, your personal knowledge platform. This guide explains how YouTwo processes documents and builds your knowledge graph.
+
+## Document Processing Pipeline
+
+YouTwo transforms your documents into structured knowledge through a seamless pipeline:
+
+1. **Document Upload**
+   - Upload markdown files, PDFs, or other document types
+   - Documents are securely stored for processing
+   - Original source files are preserved for reference
+
+2. **Document Parsing**
+   - Text extraction from various file formats
+   - Semantic chunking for better context preservation
+   - Indexing to Vectara for powerful semantic search capabilities
+   - Metadata extraction (timestamps, titles, authors)
+
+3. **Journal Entry Creation**
+   - Each document becomes a journal entry in the system
+   - Temporal metadata is preserved (creation time, content timeframe)
+   - Documents are linked to their source files
+
+4. **Embedding Generation**
+   - Vector embeddings are created for semantic similarity matching
+   - 1536-dimension embeddings capture document meaning
+   - Embeddings power similarity search and content relationships
+
+5. **Entity Extraction**
+   - AI identifies key entities mentioned in documents
+   - Entities categorized by type (people, concepts, places, etc.)
+   - Observations about entities are extracted and stored
+
+6. **Relation Identification**
+   - Connections between entities are automatically discovered
+   - Relationship types are categorized and labeled
+   - Temporal and contextual aspects of relationships are preserved
+
+7. **Knowledge Graph Update**
+   - Entities and relationships are integrated into the knowledge graph
+   - New information reinforces or extends existing knowledge
+   - Graph visualization provides insights into your knowledge network
+
+## Using the Knowledge Graph
+
+Once documents are processed, you can:
+
+- Search semantically across all your content
+- Discover relationships between concepts and ideas
+- Find similar documents based on meaning, not just keywords
+- Visualize your knowledge as an interconnected graph
+- Ask questions that draw from multiple documents
 
 ## Getting Started
 
-Get started by **creating a new site**.
+To begin building your knowledge base:
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+1. Upload your first document using the upload button
+2. Watch as YouTwo processes it through the pipeline 
+3. Explore the extracted entities and relationships
+4. Ask questions about your document to see the system in action
 
-### What you'll need
-
-- [Node.js](https://nodejs.org/en/download/) version 18.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
-
-## Generate a new site
-
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
-```
-
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
-
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+The more documents you add, the richer your knowledge graph becomes.
