@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'YouTwo RAG Hackathon',
-  tagline: 'A Gradio app for Retrieval Augmented Generation',
+  title: 'YouTwo Memory Net',
+  tagline: 'MCP-powered memory for upgrading RAG quality',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -61,7 +61,7 @@ const config: Config = {
   themeConfig: {
     image: 'tan-hummingbird.jpeg',
     navbar: {
-      title: 'YouTwo RAG Hackathon',
+      title: 'YouTwo Memory',
       logo: {
         alt: 'YouTwo Logo',
         src: 'https://avatars.githubusercontent.com/u/125774500',
