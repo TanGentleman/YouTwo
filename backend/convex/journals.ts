@@ -1,4 +1,4 @@
-import { internalQuery, mutation, query } from "./_generated/server";
+import { internalQuery, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -6,7 +6,7 @@ import { internal } from "./_generated/api";
 /**
  * Create a new journal entry
  */
-export const createJournal = mutation({
+export const createJournal = internalMutation({
   args: {
     title: v.string(),
     markdown: v.string(),
@@ -82,10 +82,13 @@ export const createJournal = mutation({
  * Get all journal entries
  */
 export const getJournals = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const journals = await ctx.db.query("journals").collect();
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const journals = args.limit ? await ctx.db.query("journals").take(args.limit) : await ctx.db.query("journals").collect();
     
+    // Reformat (why?)
     return journals.map(journal => ({
       id: journal._id,
       title: journal.title,
@@ -125,7 +128,7 @@ export const getJournal = internalQuery({
 /**
  * Update a journal entry
  */
-export const updateJournal = mutation({
+export const updateJournal = internalMutation({
   args: {
     id: v.id("journals"),
     title: v.optional(v.string()),
@@ -192,7 +195,7 @@ export const updateJournal = mutation({
 /**
  * Delete a journal entry
  */
-export const deleteJournal = mutation({
+export const deleteJournal = internalMutation({
   args: {
     id: v.id("journals"),
   },
@@ -236,7 +239,7 @@ export const deleteJournal = mutation({
 /**
  * Find semantically similar journal entries
  */
-export const findSimilarJournals = query({
+export const findSimilarJournals = internalQuery({
   args: {
     journalId: v.id("journals"),
     limit: v.optional(v.number()),
@@ -257,16 +260,18 @@ export const findSimilarJournals = query({
     const limit = args.limit || 5;
     
     // Find similar embeddings using vector search
-    const similarEmbeddings = await ctx.db
+    const similarEmbeddings = (await ctx.db
       .query("markdownEmbeddings")
       // .withIndex("byEmbedding", (q) => q.vectorSearch("embedding", embedding.embedding))
-      .filter((q) => q.neq(q.field("_id"), journal.embeddingId))
-      .take(limit);
+      // .filter((q) => q.neq(q.field("_id"), journal.embeddingId))
+      .take(limit))
+      // remove the current journal from the results
     
     // Get the corresponding journals
-    const journalIds = similarEmbeddings.map(emb => emb.journalId);
+    const journalIds = similarEmbeddings.map(emb => emb.journalId).filter(id => id !== args.journalId);
     const similarJournals = await Promise.all(
-      journalIds.map(id => ctx.db.get(id))
+      journalIds
+        .map(id => ctx.db.get(id))
     );
     
     return similarJournals

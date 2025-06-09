@@ -1,23 +1,22 @@
-import { action } from "./_generated/server";
+import { internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { createOperation } from "./operations";
 
 /**
  * Process embeddings for a newly created markdown document
  * Note: This would typically use an external API like OpenAI to generate embeddings
  */
-export const generateEmbedding = action({
+export const generateEmbedding = internalMutation({
   args: {
     markdownEmbeddingId: v.id("markdownEmbeddings"),
   },
   handler: async (ctx, args) => {
     // Get the embedding document
-    const doc = await ctx.runQuery(internal.embeddings.getMarkdownEmbeddingById, { 
-      id: args.markdownEmbeddingId 
-    });
+    const doc = await ctx.db.get(args.markdownEmbeddingId);
     
     if (!doc) {
-      await ctx.runMutation(internal.operations.logOperation, {
+      createOperation(ctx, {
         operation: "update",
         table: "markdownEmbeddings",
         success: false,
@@ -32,12 +31,9 @@ export const generateEmbedding = action({
       const mockEmbedding = createMockEmbedding(doc.markdown);
       
       // Update the document with the embedding
-      await ctx.runMutation(internal.embeddings.updateEmbedding, {
-        id: args.markdownEmbeddingId,
-        embedding: mockEmbedding,
-      });
+      await ctx.db.patch(args.markdownEmbeddingId, { embedding: mockEmbedding });
       
-      await ctx.runMutation(internal.operations.logOperation, {
+      await createOperation(ctx, {
         operation: "update",
         table: "markdownEmbeddings",
         success: true,
@@ -46,7 +42,7 @@ export const generateEmbedding = action({
       
       return args.markdownEmbeddingId;
     } catch (error) {
-      await ctx.runMutation(internal.operations.logOperation, {
+      await createOperation(ctx, {
         operation: "update",
         table: "markdownEmbeddings",
         success: false,
@@ -63,62 +59,33 @@ export const generateEmbedding = action({
  * you would use a proper embedding model from OpenAI, Cohere, etc.
  */
 function createMockEmbedding(text: string): number[] {
-  // In a real implementation, this would be an API call to get embeddings
-  // For demo purposes, we'll generate a deterministic pseudo-random embedding based on text
-  const seed = hashString(text);
-  const embedding = [];
-  
-  // Generate 1536 dimensions (matching OpenAI's ada-002 embedding size)
-  for (let i = 0; i < 1536; i++) {
-    // Generate a pseudo-random value between -1 and 1
-    const value = (Math.sin(seed * (i + 1) * 0.1) + 1) / 2;
-    embedding.push(value);
-  }
-  
-  // Normalize the embedding vector
-  const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
-  return embedding.map(val => val / magnitude);
-}
-
-/**
- * Simple hash function for strings
- */
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash;
+  // Simple mock: fill with zeros except the first element is the text length mod 1
+  const embedding = new Array(1536).fill(0);
+  embedding[0] = (text.length % 100) / 100;
+  return embedding;
 }
 
 /**
  * Get a markdown embedding document by ID (internal)
  */
-export const getMarkdownEmbeddingById = action({
+export const getMarkdownEmbeddingById = internalQuery({
   args: {
     id: v.id("markdownEmbeddings"),
   },
   handler: async (ctx, args) => {
-    return await ctx.runQuery(async (db) => {
-      return await db.get(args.id);
-    });
+    return await ctx.db.get(args.id);
   },
 });
 
 /**
  * Update an embedding (internal)
  */
-export const updateEmbedding = action({
+export const updateEmbedding = internalMutation({
   args: {
     id: v.id("markdownEmbeddings"),
     embedding: v.array(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.runMutation(async (db) => {
-      await db.patch(args.id, { embedding: args.embedding });
-      return args.id;
-    });
+    return await ctx.db.patch(args.id, { embedding: args.embedding });
   },
 }); 

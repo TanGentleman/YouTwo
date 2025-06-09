@@ -1,11 +1,11 @@
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 
 /**
  * Create multiple new relations between entities
  */
-export const createRelations = mutation({
+export const createRelations = internalMutation({
   args: {
     relations: v.array(
       v.object({
@@ -121,7 +121,7 @@ export const createRelations = mutation({
 /**
  * Delete specific relations from the graph
  */
-export const deleteRelations = mutation({
+export const deleteRelations = internalMutation({
   args: {
     relations: v.array(
       v.object({

@@ -8,6 +8,7 @@ export const journalsDoc = v.object({
   startTime: v.number(),
   endTime: v.number(),
   embeddingId: v.union(v.id('markdownEmbeddings'), v.null()),
+  references: v.optional(v.array(v.string())),
 });
 
 // Entities are primary nodes in the knowledge graph

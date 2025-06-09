@@ -1,11 +1,11 @@
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 /**
  * Run a test suite to verify the knowledge graph API
  */
-export const runTests = action({
+export const runTests = internalAction({
   args: {},
   handler: async (ctx) => {
     const results = {
@@ -43,7 +43,7 @@ export const runTests = action({
         }
       ];
       
-      const createEntitiesResult = await ctx.runMutation(api.entities.createEntities, {
+      const createEntitiesResult = await ctx.runMutation(internal.entities.createEntities, {
         entities
       });
       
@@ -59,7 +59,7 @@ export const runTests = action({
         }
       ];
       
-      const createRelationsResult = await ctx.runMutation(api.relations.createRelations, {
+      const createRelationsResult = await ctx.runMutation(internal.relations.createRelations, {
         relations
       });
       
@@ -74,7 +74,7 @@ export const runTests = action({
         }
       ];
       
-      const addObservationsResult = await ctx.runMutation(api.entities.addObservations, {
+      const addObservationsResult = await ctx.runMutation(internal.entities.addObservations, {
         observations
       });
       
@@ -82,7 +82,7 @@ export const runTests = action({
       recordTest("Add observations", allObservationsAdded, { addObservationsResult });
       
       // Test 4: Read graph
-      const graph = await ctx.runQuery(api.knowledge.readGraph, {});
+      const graph = await ctx.runQuery(internal.knowledge.readGraph, {});
       
       const graphHasEntities = graph.entities && graph.entities.length >= 2;
       const graphHasRelations = graph.relations && graph.relations.length >= 1;
@@ -93,7 +93,7 @@ export const runTests = action({
       });
       
       // Test 5: Search nodes
-      const searchResults = await ctx.runQuery(api.knowledge.searchNodes, {
+      const searchResults = await ctx.runQuery(internal.knowledge.searchNodes, {
         query: "test"
       });
       
@@ -103,7 +103,7 @@ export const runTests = action({
       });
       
       // Test 6: Open nodes by name
-      const nodeResults = await ctx.runQuery(api.knowledge.openNodes, {
+      const nodeResults = await ctx.runQuery(internal.knowledge.openNodes, {
         names: ["Test_Person", "Test_Organization"]
       });
       
@@ -120,7 +120,7 @@ export const runTests = action({
         }
       ];
       
-      const deleteObservationsResult = await ctx.runMutation(api.entities.deleteObservations, {
+      const deleteObservationsResult = await ctx.runMutation(internal.entities.deleteObservations, {
         deletions
       });
       
@@ -128,7 +128,7 @@ export const runTests = action({
       recordTest("Delete observations", allObservationsDeleted, { deleteObservationsResult });
       
       // Test 8: Delete relations
-      const deleteRelationsResult = await ctx.runMutation(api.relations.deleteRelations, {
+      const deleteRelationsResult = await ctx.runMutation(internal.relations.deleteRelations, {
         relations
       });
       
@@ -136,7 +136,7 @@ export const runTests = action({
       recordTest("Delete relations", allRelationsDeleted, { deleteRelationsResult });
       
       // Test 9: Delete entities
-      const deleteEntitiesResult = await ctx.runMutation(api.entities.deleteEntities, {
+      const deleteEntitiesResult = await ctx.runMutation(internal.entities.deleteEntities, {
         entityNames: ["Test_Person", "Test_Organization"]
       });
       
@@ -144,19 +144,27 @@ export const runTests = action({
       recordTest("Delete entities", allEntitiesDeleted, { deleteEntitiesResult });
       
       // Log test completion
-      await ctx.runMutation(internal.operations.logOperation, {
-        operation: "read",
-        table: "entities",
-        success: true,
-        message: `Test suite completed: ${results.passed} passed, ${results.failed} failed`
+      await ctx.runMutation(internal.operations.createOperations, {
+        operations: [
+          {
+            operation: "read",
+            table: "entities",
+            success: true,
+            message: `Test suite completed: ${results.passed} passed, ${results.failed} failed`
+          }
+        ]
       });
       
     } catch (error) {
-      await ctx.runMutation(internal.operations.logOperation, {
-        operation: "read",
-        table: "entities",
-        success: false,
-        error: `Test suite failed with error: ${error}`
+      await ctx.runMutation(internal.operations.createOperations, {
+        operations: [
+          {
+            operation: "read",
+            table: "entities",
+            success: false,
+            error: `Test suite failed with error: ${error}`
+          }
+        ]
       });
       
       recordTest("Test suite execution", false, { error: String(error) });
@@ -169,7 +177,7 @@ export const runTests = action({
 /**
  * Run tests for the HTTP API endpoints
  */
-export const testHttpEndpoints = action({
+export const testHttpEndpoints = internalAction({
   args: {},
   handler: async (ctx) => {
     const results = {
@@ -351,19 +359,27 @@ export const testHttpEndpoints = action({
       );
 
       // Log test completion
-      await ctx.runMutation(internal.operations.logOperation, {
-        operation: "read",
-        table: "entities",
-        success: true,
-        message: `HTTP test suite completed: ${results.passed} passed, ${results.failed} failed`
+      await ctx.runMutation(internal.operations.createOperations, {
+        operations: [
+          {
+            operation: "read",
+            table: "entities",
+            success: true,
+            message: `HTTP test suite completed: ${results.passed} passed, ${results.failed} failed`
+          }
+        ]
       });
 
     } catch (error) {
-      await ctx.runMutation(internal.operations.logOperation, {
-        operation: "read",
-        table: "entities",
-        success: false,
-        error: `HTTP test suite failed with error: ${error}`
+      await ctx.runMutation(internal.operations.createOperations, {
+        operations: [
+          {
+            operation: "read",
+            table: "entities",
+            success: false,
+            error: `HTTP test suite failed with error: ${error}`
+          }
+        ]
       });
       
       recordTest("HTTP test suite execution", false, { error: String(error) });

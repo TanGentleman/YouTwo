@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 
 const http = httpRouter();
@@ -23,7 +23,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.entities.createEntities, { 
+    const result = await ctx.runMutation(internal.entities.createEntities, { 
       entities: body.entities 
     });
     
@@ -52,7 +52,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.relations.createRelations, {
+    const result = await ctx.runMutation(internal.relations.createRelations, {
       relations: body.relations
     });
     
@@ -81,7 +81,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.entities.addObservations, {
+    const result = await ctx.runMutation(internal.entities.addObservations, {
       observations: body.observations
     });
     
@@ -98,7 +98,7 @@ http.route({
   path: "/graph",
   method: "GET",
   handler: httpAction(async (ctx) => {
-    const result = await ctx.runQuery(api.knowledge.readGraph, {});
+    const result = await ctx.runQuery(internal.knowledge.readGraph, {});
     
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" }
@@ -116,7 +116,7 @@ http.route({
     const url = new URL(request.url);
     const query = url.searchParams.get("q") || "";
     
-    const result = await ctx.runQuery(api.knowledge.searchNodes, { query });
+    const result = await ctx.runQuery(internal.knowledge.searchNodes, { query });
     
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" }
@@ -145,7 +145,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runQuery(api.knowledge.openNodes, { names });
+    const result = await ctx.runQuery(internal.knowledge.openNodes, { names });
     
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" }
@@ -172,7 +172,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.entities.deleteEntities, {
+    const result = await ctx.runMutation(internal.entities.deleteEntities, {
       entityNames: body.entityNames
     });
     
@@ -201,7 +201,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.entities.deleteObservations, {
+    const result = await ctx.runMutation(internal.entities.deleteObservations, {
       deletions: body.deletions
     });
     
@@ -230,7 +230,7 @@ http.route({
       );
     }
     
-    const result = await ctx.runMutation(api.relations.deleteRelations, {
+    const result = await ctx.runMutation(internal.relations.deleteRelations, {
       relations: body.relations
     });
     

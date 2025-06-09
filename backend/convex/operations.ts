@@ -1,49 +1,76 @@
-import { mutation, internalMutation } from "./_generated/server";
+import { GenericMutationCtx } from "convex/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { DataModel, Id } from "./_generated/dataModel";
 
-/**
- * Log an operation in the operations table
- */
-export const logOperation = internalMutation({
-  args: {
-    operation: v.union(
-      v.literal("distill"),
-      v.literal("create"),
-      v.literal("read"),
-      v.literal("update"),
-      v.literal("delete")
-    ),
-    table: v.union(
-      v.literal("journals"),
-      v.literal("knowledge"),
-      v.literal("entities"),
-      v.literal("relations"),
-      v.literal("metadata"),
-      v.literal("markdownEmbeddings")
-    ),
-    success: v.boolean(),
-    message: v.optional(v.string()),
-    error: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const operationId = await ctx.db.insert("operations", {
-      operation: args.operation,
-      table: args.table,
-      success: args.success,
-      data: {
+
+export async function createOperation(ctx: GenericMutationCtx<DataModel>, args: {
+  operation: "distill" | "create" | "read" | "update" | "delete";
+  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata";
+  success: boolean;
+  message?: string;
+  error?: string;
+},) {
+  const operationId = await ctx.db.insert("operations", {
+    operation: args.operation,
+    table: args.table,
+    success: args.success,
+    data: {
         message: args.message,
         error: args.error,
       },
     });
-    
-    return operationId;
+  return operationId;
+}
+
+/**
+ * Log an operation in the operations table
+ */
+export const createOperations = internalMutation({
+  args: {
+    operations: v.array(v.object({
+      operation: v.union(
+        v.literal("distill"),
+        v.literal("create"),
+        v.literal("read"),
+        v.literal("update"),
+        v.literal("delete")
+      ),
+      table: v.union(
+        v.literal("journals"),
+        v.literal("knowledge"),
+        v.literal("entities"),
+        v.literal("relations"),
+        v.literal("metadata"),
+        v.literal("markdownEmbeddings")
+      ),
+      success: v.boolean(),
+      message: v.optional(v.string()),
+      error: v.optional(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const operationIds: Id<"operations">[] = [];
+    for (const operation of args.operations) {
+      const operationId = await ctx.db.insert("operations", {
+        operation: operation.operation,
+        table: operation.table,
+        success: operation.success,
+        data: {
+          message: operation.message,
+          error: operation.error,
+        },
+      });
+      operationIds.push(operationId);
+    }
+    return operationIds;
   },
 });
 
 /**
  * Get recent operations from the operations log
  */
-export const getRecentOperations = mutation({
+export const getRecentOperations = internalMutation({
   args: {
     limit: v.optional(v.number()),
     table: v.optional(
@@ -68,20 +95,18 @@ export const getRecentOperations = mutation({
   },
   handler: async (ctx, args) => {
     const limit = args.limit || 100;
-    let query = ctx.db.query("operations");
+    let operations = await ctx.db.query("operations")
+      .order("desc")
+      .take(500);
     
     if (args.table) {
-      query = query.filter(q => q.eq(q.field("table"), args.table));
+      operations = operations.filter(operation => operation.table === args.table);
     }
     
     if (args.operation) {
-      query = query.filter(q => q.eq(q.field("operation"), args.operation));
+      operations = operations.filter(operation => operation.operation === args.operation);
     }
     
-    const operations = await query
-      .order("desc")
-      .take(limit);
-    
-    return operations;
+    return operations.slice(0, limit);
   },
 }); 

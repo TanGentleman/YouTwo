@@ -1,11 +1,11 @@
-import { query } from "./_generated/server";
+import { internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 
 /**
  * Read the entire knowledge graph
  */
-export const readGraph = query({
+export const readGraph = internalQuery({
   args: {},
   handler: async (ctx) => {
     // Get all entities
@@ -41,7 +41,7 @@ export const readGraph = query({
 /**
  * Search for nodes based on query.
  */
-export const searchNodes = query({
+export const searchNodes = internalQuery({
   args: { query: v.string() },
   handler: async (ctx, args) => {
     if (!args.query?.trim()) {
@@ -95,7 +95,7 @@ export const searchNodes = query({
 /**
  * Retrieve specific nodes by name
  */
-export const openNodes = query({
+export const openNodes = internalQuery({
   args: { names: v.array(v.string()) },
   handler: async (ctx, args) => {
     if (!args.names?.length) {

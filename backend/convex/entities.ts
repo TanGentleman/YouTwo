@@ -1,10 +1,10 @@
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 /**
  * Create multiple new entities in the knowledge graph
  */
-export const createEntities = mutation({
+export const createEntities = internalMutation({
   args: {
     entities: v.array(
       v.object({
@@ -54,7 +54,7 @@ export const createEntities = mutation({
 /**
  * Add new observations to existing entities
  */
-export const addObservations = mutation({
+export const addObservations = internalMutation({
   args: {
     observations: v.array(
       v.object({
@@ -112,7 +112,7 @@ export const addObservations = mutation({
 /**
  * Delete entities and their associated relations
  */
-export const deleteEntities = mutation({
+export const deleteEntities = internalMutation({
   args: {
     entityNames: v.array(v.string()),
   },
@@ -178,7 +178,7 @@ export const deleteEntities = mutation({
 /**
  * Delete specific observations from entities
  */
-export const deleteObservations = mutation({
+export const deleteObservations = internalMutation({
   args: {
     deletions: v.array(
       v.object({
