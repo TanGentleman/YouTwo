@@ -34,60 +34,22 @@ def natural_language_handler(query: str) -> str:
     chunks, response = retrieve_chunks(query, limit=5)
     return f"💬 Got {len(chunks)} chunks for your request: “{query}”. Response: {response}"
 
-def agent_handler(query: str) -> str:
-    """
-    Placeholder for unimplemented features.
-
-    Args:
-        feature_name (str): Name of the feature to query.
-
-    Returns:
-        str: Placeholder response for future functions.
-    """
-    response = agent.run(query)
-
-    print("Raw Response:\n", response)
-    if isinstance(response, dict):
-        parsed_response = response.get("output") or response.get("answer") or str(response)
-    else:
-        parsed_response = str(response)
-    print("\nParsed Agent Response:\n", parsed_response)
-
-    messages = agent.memory.get_succinct_steps()
-    print("\nParsed messages:")
-    print("**********")
-    pprint(messages)
-    return f"💬 Response Output: {parsed_response}"
-
-def placeholder(feature_name: str = "unknown") -> str:
-    """
-    Placeholder for unimplemented features.
-
-    Args:
-        feature_name (str): Name of the feature to query.
-
-    Returns:
-        str: Placeholder response for future functions.
-    """
-    return f"{feature_name} functionality not available yet."  # Replace with dynamic logic later
-
 def agent_chat(message: str, chat_history: tuple[str, str]):
     if not message.strip():
         return chat_history, ""
 
-    # Add user message to chat
-    #chat_history.append({"role": "user", "content": message})
-
     # Append user message to history
-    #chat_history = chat_history or []
     chat_history.append(("You", message))
 
     # Run your agent
-    agent_response = agent_handler(message)
+    response = agent.run(message)
+    if isinstance(response, dict):
+        parsed_response = response.get("output") or response.get("answer") or str(response)
+    else:
+        parsed_response = str(response)
 
     # Append agent response to history
-    #chat_history.append({"role": "assistant", "content": agent_response})
-    chat_history.append(("Agent", agent_response))
+    chat_history.append(("Agent", parsed_response))
 
     return chat_history, ""
 
@@ -137,14 +99,6 @@ def get_gradio_blocks():
             query_out = gr.Textbox(label="System Response")
             query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
-        with gr.Tab("⚙️ Simple Agent"):
-            gr.Markdown("Agentic Question and Answer")
-            feature = gr.Textbox(label="Feature to Check")
-            feature_btn = gr.Button("Check Feature Status")
-            feature_out = gr.Textbox(label="Status")
-            feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
-            feature_btn.click(fn=agent_handler, inputs=feature, outputs=feature_out)
-        
         with gr.Tab("⚙️ Agentic Chat"):
             gr.Markdown("Agentic Question and Answer1")
             chatbot = gr.Chatbot(label="KG Agent", height=500, show_label=True, container=True,
