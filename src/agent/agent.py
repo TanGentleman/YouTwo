@@ -21,9 +21,9 @@ load_dotenv()
 curr_dir = Path(__file__).parent
 
 # Initialize models
-stt_model = get_stt_model()
-tts_model = get_tts_model()
-
+# stt_model = get_stt_model()
+# tts_model = get_tts_model()
+model = InferenceClientModel(provider="nebius", model="nebius/Qwen/Qwen3-30B-A3B", api_key=os.environ["NEBIUS_API_KEY"])
 # Conversation state to maintain history
 conversation_state: List[Dict[str, str]] = []
 
@@ -37,7 +37,7 @@ When a question requires document-based information:
 If information isn't in documents, use your general knowledge but state this limitation.
 """
 
-model = InferenceClientModel(provider="nebius", model="nebius/Qwen/Qwen3-235B-A22B", api_key=os.environ["NEBIUS_API_KEY"])
+
 
 @tool
 def retrieve_tool(query: str, limit: int = 5) -> list[dict]:
@@ -63,36 +63,38 @@ agent = CodeAgent(
     description="Search the YouTwo architecture documentation for information.",
 )
 
-def process_response(audio):
-    """Process audio input and generate LLM response with TTS"""
-    # Convert speech to text using STT model
-    text = stt_model.stt(audio)
-    if not text.strip():
-        return
+# def process_response(audio):
+#     """Process audio input and generate LLM response with TTS"""
+#     # Convert speech to text using STT model
+#     text = stt_model.stt(audio)
+#     if not text.strip():
+#         return
 
-    input_text = f"{system_prompt}\n\n{text}"
-    # Get response from agent
-    response_content = agent.run(input_text)
+#     input_text = f"{system_prompt}\n\n{text}"
+#     # Get response from agent
+#     response_content = agent.run(input_text)
 
-    # Convert response to audio using TTS model
-    for audio_chunk in tts_model.stream_tts_sync(response_content or ""):
-        # Yield the audio chunk
-        yield audio_chunk
+#     # Convert response to audio using TTS model
+#     for audio_chunk in tts_model.stream_tts_sync(response_content or ""):
+#         # Yield the audio chunk
+#         yield audio_chunk
 
 
-stream = Stream(
-    handler=ReplyOnPause(process_response, input_sample_rate=16000),
-    modality="audio",
-    mode="send-receive",
-    ui_args={
-        "pulse_color": "rgb(255, 255, 255)",
-        "icon_button_color": "rgb(255, 255, 255)",
-        "title": "🧑‍💻The YouTwo Agent",
-    },
-    # rtc_configuration=get_twilio_turn_credentials(),
-    rtc_configuration = {"iceServers": [{"urls": "stun:stun.l.google.com:19302"}]}
-)
+# stream = Stream(
+#     handler=ReplyOnPause(process_response, input_sample_rate=16000),
+#     modality="audio",
+#     mode="send-receive",
+#     ui_args={
+#         "pulse_color": "rgb(255, 255, 255)",
+#         "icon_button_color": "rgb(255, 255, 255)",
+#         "title": "🧑‍💻The YouTwo Agent",
+#     },
+#     # rtc_configuration=get_twilio_turn_credentials(),
+#     rtc_configuration = {"iceServers": [{"urls": "stun:stun.l.google.com:19302"}]}
+# )
 
 if __name__ == "__main__":
     # stream.ui.launch(server_port=7861)
-    agent.run("Tell me about rituals.")
+    agent.run("What is 2+2?")
+    messages = agent.memory.get_full_steps()
+    print(messages)

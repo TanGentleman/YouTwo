@@ -111,27 +111,27 @@ def get_gradio_blocks():
     with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
         gr.Markdown("## 🧠 Knowledge Graph Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
 
-        with gr.Tab("🔄 Sync Lifelog DB"):
-            gr.Markdown("Synchronize the lifelog database locally.")
-            sync_btn = gr.Button("Sync Database")
-            sync_out = gr.Textbox(lines=2, label="Sync Status")
-            sync_btn.click(fn=sync_lifelog_db, outputs=sync_out)
+        # with gr.Tab("🔄 Sync Lifelog DB"):
+        #     gr.Markdown("Synchronize the lifelog database locally.")
+        #     sync_btn = gr.Button("Sync Database")
+        #     sync_out = gr.Textbox(lines=2, label="Sync Status")
+        #     sync_btn.click(fn=sync_lifelog_db, outputs=sync_out)
 
-        with gr.Tab("🔍 Search Lifelogs"):
-            gr.Markdown("Search lifelog entries by keyword and time range.")
-            keyword = gr.Textbox(label="Search Keyword")
-            with gr.Row():
-                start_date = gr.Textbox(label="Start Date (YYYY-MM-DD)")
-                end_date = gr.Textbox(label="End Date (YYYY-MM-DD)")
-            search_btn = gr.Button("Search Entries")
-            search_out = gr.Textbox(label="Search Results")
-            search_btn.click(fn=search_lifelogs, inputs=[keyword, start_date, end_date], outputs=search_out)
+        # with gr.Tab("🔍 Search Lifelogs"):
+        #     gr.Markdown("Search lifelog entries by keyword and time range.")
+        #     keyword = gr.Textbox(label="Search Keyword")
+        #     with gr.Row():
+        #         start_date = gr.Textbox(label="Start Date (YYYY-MM-DD)")
+        #         end_date = gr.Textbox(label="End Date (YYYY-MM-DD)")
+        #     search_btn = gr.Button("Search Entries")
+        #     search_out = gr.Textbox(label="Search Results")
+        #     search_btn.click(fn=search_lifelogs, inputs=[keyword, start_date, end_date], outputs=search_out)
 
-        with gr.Tab("🧠 Update Knowledge Graph"):
-            gr.Markdown("Use lifelog data to update knowledge graph relations.")
-            update_btn = gr.Button("Update Graph")
-            update_out = gr.Textbox(label="Update Status")
-            update_btn.click(fn=update_knowledge_graph_relations, outputs=update_out)
+        # with gr.Tab("🧠 Update Knowledge Graph"):
+        #     gr.Markdown("Use lifelog data to update knowledge graph relations.")
+        #     update_btn = gr.Button("Update Graph")
+        #     update_out = gr.Textbox(label="Update Status")
+        #     update_btn.click(fn=update_knowledge_graph_relations, outputs=update_out)
 
         with gr.Tab("🗣️ Natural Language Mode"):
             gr.Markdown("Input natural language requests for system actions.")

@@ -10,7 +10,7 @@ curr_dir = Path(__file__).parent
 web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "python-dotenv",
     "fastapi[standard]==0.115.4",
-    "gradio==5.33.0",
+    "gradio[mcp]==5.33.0",
     "requests",
     # Add any other dependencies you need
 ).add_local_file(curr_dir / "app.py", "/root/app.py") \
@@ -57,4 +57,4 @@ def gradio_app():
 
 
 if __name__ == "__main__":
-    gradio_app.serve() 
+    gradio_app.serve(mcp_server=True) 
