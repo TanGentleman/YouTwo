@@ -34,12 +34,12 @@ def natural_language_handler(query: str) -> str:
     chunks, response = retrieve_chunks(query, limit=5)
     return f"💬 Got {len(chunks)} chunks for your request: “{query}”. Response: {response}"
 
-def agent_chat(message: str, chat_history: tuple[str, str]):
+def agent_chat(message: str, chat_history):
     if not message.strip():
         return chat_history, ""
 
     # Append user message to history
-    chat_history.append(("You", message))
+    chat_history.append({"role": "user", "content": message})
 
     # Run your agent
     response = agent.run(message)
@@ -49,7 +49,7 @@ def agent_chat(message: str, chat_history: tuple[str, str]):
         parsed_response = str(response)
 
     # Append agent response to history
-    chat_history.append(("Agent", parsed_response))
+    chat_history.append({"role": "assistant", "content": parsed_response})
 
     return chat_history, ""
 
@@ -101,10 +101,10 @@ def get_gradio_blocks():
 
         with gr.Tab("⚙️ Agentic Chat"):
             gr.Markdown("Agentic Question and Answer1")
-            chatbot = gr.Chatbot(label="KG Agent", height=500, show_label=True, container=True,
+            chatbot = gr.Chatbot(label="KG Agent", height=500, show_label=True, container=True, type="messages",
                 bubble_full_width=False,
                 value=[
-                    (None, "👋 Hello! I'm the KG Agent, your intelligent assistant for serving KG. How can I help you today?")
+                    {"role": "assistant", "content": "👋 Hello! I'm the KG Agent, your intelligent assistant for serving KG. How can I help you today?"}
                 ])
             user_input = gr.Textbox(placeholder="Type your question...", label="Message", lines=2, scale=4, show_label=False)
             #clear_button = gr.Button("🗑️ Clear Chat", size="sm")
