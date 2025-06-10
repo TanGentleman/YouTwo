@@ -3,13 +3,6 @@ from pathlib import Path
 from typing import List, Dict
 
 from dotenv import load_dotenv
-from fastrtc import (
-    get_stt_model,
-    get_tts_model,
-    Stream,
-    ReplyOnPause,
-    # get_twilio_turn_credentials,
-)
 from smolagents import CodeAgent, InferenceClientModel, tool
 
 from src.yt_rag.rag import retrieve_chunks

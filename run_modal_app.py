@@ -15,6 +15,7 @@ web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "fastapi[standard]==0.115.4",
     "gradio[mcp]==5.33.0",
     "requests",
+    "smolagents",
     # Add any other dependencies you need
 ).add_local_file(rag_dir / "rag.py", "/root/src/yt_rag/rag.py") \
 .add_local_file(gradio_dir / "app.py", "/root/src/yt_gradio/app.py") \
@@ -34,7 +35,8 @@ volume = modal.Volume.from_name("youtwo-volume", create_if_missing=True)
 @app.function(
     volumes={"/data": volume},
     secrets=[
-        modal.Secret.from_name("vectara")
+        modal.Secret.from_name("vectara"),
+        modal.Secret.from_name("nebius")
     ],
     max_containers=1,
     scaledown_window=TIME_LIMIT,  # 3540 seconds, within the allowed 2-3600 second range
