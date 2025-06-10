@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 backend/convex/_generated/
 node_modules/
+backend/package-lock.json
