@@ -1,10 +1,7 @@
 
 .env
-node_modules
-.venv
+__pycache__/
 .DS_Store
-.env.local
-__pycache__
-build/
-.docusaurus
+.venv/
 backend/convex/_generated/
+node_modules/
