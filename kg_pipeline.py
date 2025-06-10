@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from typing import TypedDict, List, Tuple, Dict, Any
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
+import requests
+import os
 
 # --- State Definition ---
 class KGState(TypedDict):
@@ -20,91 +22,59 @@ class KGState(TypedDict):
     messages: List[Any]
     current_agent: str  # used by LangGraph state router
 
-# --- Agent Functions ---
-def data_gatherer(state: KGState) -> KGState:
-    topic = state["topic"]
-    print(f"📚 Data Gatherer: Searching for information about '{topic}'")
+# --- Helper Functions ---
+import requests
 
-    # NOTE: Add hook here, like a search over a DB.
-    collected_text = f"{topic} is an important concept. It relates to various entities like EntityA, EntityB, and EntityC. EntityA influences EntityB. EntityC is a type of EntityB."
+def fetch_knowledge_graph():
+    """Fetch knowledge graph from Convex HTTP API"""
+    convex_url = os.getenv("CONVEX_URL")
+    if not convex_url:
+        raise ValueError("CONVEX_URL environment variable not set")
+    # Ensure no trailing slash
+    # If convex_url ends with .cloud or .cloud/, replace with .site
+    if convex_url.endswith(".cloud/"):
+        convex_url = convex_url[:-7] + ".site"
+    elif convex_url.endswith(".cloud"):
+        convex_url = convex_url[:-6] + ".site"
+    if not convex_url.endswith(".site"):
+       raise ValueError("CONVEX_URL must end with .site")
+    api_url = f"{convex_url}/graph"
+    response = requests.get(api_url)
+    response.raise_for_status()
+    return response.json()
 
-    state["messages"].append(AIMessage(content=f"Collected raw text about {topic}"))
-
-    state["raw_text"] = collected_text
-    state["current_agent"] = "entity_extractor"
-
-    return state
-
-def entity_extractor(state: KGState) -> KGState:
-    print("🔍 Entity Extractor: Identifying entities in the text")
-    text = state["raw_text"]
-
-    entities = re.findall(r"Entity[A-Z]", text)
-
-    entities = [state["topic"]] + entities
-    state["entities"] = list(set(entities))
-
-    state["messages"].append(AIMessage(content=f"Extracted entities: {state['entities']}"))
-    print(f"   Found entities: {state['entities']}")
-
-    state["current_agent"] = "relation_extractor"
-
-    return state
-
-def relation_extractor(state: KGState) -> KGState:
-    print("🔗 Relation Extractor: Identifying relationships between entities")
-    text = state["raw_text"]
-    entities = state["entities"]
-    relations = []
-
-    relation_patterns = [
-        (r"([A-Za-z]+) relates to ([A-Za-z]+)", "relates_to"),
-        (r"([A-Za-z]+) influences ([A-Za-z]+)", "influences"),
-        (r"([A-Za-z]+) is a type of ([A-Za-z]+)", "is_type_of")
+def prepare_graph_data(graph_data):
+    """Convert Convex graph data to pipeline format"""
+    entities = [
+        {"id": e["id"], "name": e["name"], "type": e["entityType"]}
+        for e in graph_data["entities"]
     ]
+    
+    relations = [
+        (rel["from"], rel["relationType"], rel["to"])
+        for rel in graph_data["relations"]
+    ]
+    
+    return entities, relations
 
-    for e1 in entities:
-        for e2 in entities:
-            if e1 != e2:
-                for pattern, rel_type in relation_patterns:
-                    if re.search(f"{e1}.*{rel_type}.*{e2}", text.replace("_", " "), re.IGNORECASE) or \
-                       re.search(f"{e1}.*{e2}", text, re.IGNORECASE):
-                        relations.append((e1, rel_type, e2))
-
+# --- Modified Agent Functions ---
+def data_gatherer(state: KGState) -> KGState:
+    print("📚 Data Gatherer: Fetching knowledge graph from Convex")
+    graph_data = fetch_knowledge_graph()
+    entities, relations = prepare_graph_data(graph_data)
+    
+    state["entities"] = entities
     state["relations"] = relations
-    state["messages"].append(AIMessage(content=f"Extracted relations: {relations}"))
-    print(f"   Found relations: {relations}")
-
-    state["current_agent"] = "entity_resolver"
-
-    return state
-
-def entity_resolver(state: KGState) -> KGState:
-    print("🔄 Entity Resolver: Resolving duplicate entities")
-
-    entity_map = {}
-    for entity in state["entities"]:
-        canonical_name = entity.lower().replace(" ", "_")
-        entity_map[entity] = canonical_name
-
-    resolved_relations = []
-    for s, p, o in state["relations"]:
-        s_resolved = entity_map.get(s, s)
-        o_resolved = entity_map.get(o, o)
-        resolved_relations.append((s_resolved, p, o_resolved))
-
-    state["resolved_relations"] = resolved_relations
-    state["messages"].append(AIMessage(content=f"Resolved relations: {resolved_relations}"))
-
+    state["messages"].append(AIMessage(content="Fetched knowledge graph from Convex"))
     state["current_agent"] = "graph_integrator"
-
+    
     return state
 
 def graph_integrator(state: KGState) -> KGState:
     print("📊 Graph Integrator: Building the knowledge graph")
     G = nx.DiGraph()
 
-    for s, p, o in state["resolved_relations"]:
+    for s, p, o in state["relations"]:
         if not G.has_node(s):
             G.add_node(s)
         if not G.has_node(o):
@@ -137,9 +107,6 @@ def graph_validator(state: KGState) -> KGState:
 
     return state
 
-def router(state: KGState) -> str:
-    return state["current_agent"]
-
 def visualize_graph(graph):
     plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(graph)
@@ -157,27 +124,14 @@ def build_kg_graph():
     workflow = StateGraph(KGState)
 
     workflow.add_node("data_gatherer", data_gatherer)
-    workflow.add_node("entity_extractor", entity_extractor)
-    workflow.add_node("relation_extractor", relation_extractor)
-    workflow.add_node("entity_resolver", entity_resolver)
     workflow.add_node("graph_integrator", graph_integrator)
     workflow.add_node("graph_validator", graph_validator)
 
-    workflow.add_conditional_edges("data_gatherer", router,
-                                {"entity_extractor": "entity_extractor"})
-    workflow.add_conditional_edges("entity_extractor", router,
-                                {"relation_extractor": "relation_extractor"})
-    workflow.add_conditional_edges("relation_extractor", router,
-                                {"entity_resolver": "entity_resolver"})
-    workflow.add_conditional_edges("entity_resolver", router,
-                                {"graph_integrator": "graph_integrator"})
-    workflow.add_conditional_edges("graph_integrator", router,
-                                {"graph_validator": "graph_validator"})
-    workflow.add_conditional_edges("graph_validator", router,
-                                {END: END})
+    workflow.add_edge("data_gatherer", "graph_integrator")
+    workflow.add_edge("graph_integrator", "graph_validator")
+    workflow.add_edge("graph_validator", END)
 
     workflow.set_entry_point("data_gatherer")
-
     return workflow.compile()
 
 
@@ -199,6 +153,8 @@ def run_kg_pipeline(topic):
     return result
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     result = run_kg_pipeline("Machine Learning")
     print(result)
     visualize_graph(result["graph"])
