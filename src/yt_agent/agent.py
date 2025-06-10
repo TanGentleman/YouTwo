@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from smolagents import CodeAgent, InferenceClientModel
 
 from src.yt_agent.tools import retrieve_tool
-from src.yt_agent.prompts import AGENTIC_MODE_SYSTEM_PROMPT
 
 # Load environment variables
 load_dotenv()
@@ -17,11 +16,10 @@ agent = CodeAgent(
     model=model,
     max_steps=2,
     verbosity_level=2,
-    description=AGENTIC_MODE_SYSTEM_PROMPT,
+    description="Agent used to search documents.",
 )
 
 if __name__ == "__main__":
-    # stream.ui.launch(server_port=7861)
     agent.run("What is 2+2?")
     messages = agent.memory.get_full_steps()
     print(messages)
