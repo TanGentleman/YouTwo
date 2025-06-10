@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from smolagents import CodeAgent, InferenceClientModel
 
-from src.yt_agent.tools import retrieve_tool
+from src.yt_agent.tools import retrieve_tool, inspect_database_tool
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +12,7 @@ model = InferenceClientModel(provider="nebius", model="nebius/Qwen/Qwen3-30B-A3B
 agent = CodeAgent(
     tools=[
         retrieve_tool,
+        inspect_database_tool,
     ],
     model=model,
     max_steps=2,

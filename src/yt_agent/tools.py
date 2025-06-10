@@ -24,9 +24,11 @@ def retrieve_tool(query: str, limit: int = 5) -> dict[str, list[str] | str]:
 def inspect_database_tool() -> dict[str, list[str]]:
     """
     Inspect the vector database
+
+    Returns:
+        A list of documents
     """
     results = fetch_documents_from_corpus(limit = 50)
     documents = VectaraDocuments(documents = results["documents"])
-    return {
-        "documents": documents["documents"],
-    }
+    id_list = [document["id"] for document in documents["documents"]]
+    return "The following documents are in the vector database:\n" + "\n".join(id_list)
