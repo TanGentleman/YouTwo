@@ -137,7 +137,7 @@ def process_upload_response(response_json: dict) -> UploadResult:
         storage_usage=response_json["storage_usage"]
     )
 # See https://docs.vectara.com/docs/rest-api/query-corpus
-def retrieve_chunks(query: str, limit: int = 10) -> tuple[list[str], str]:
+def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tuple[list[str], str]:
     """
     Retrieves relevant chunks and a generated summary from the Vectara corpus based on the query.
 
@@ -158,9 +158,24 @@ def retrieve_chunks(query: str, limit: int = 10) -> tuple[list[str], str]:
         "x-api-key": api_key,
         "Content-Type": "application/json"
     }
+
+    # if filter_by_id:
+    #     return f"doc.id = {filter_by_id}"
+    # else:
+    #     return None
+    
     payload = {
         "query": query,
         "search": {
+            "corpora":[
+                {
+                    "corpus_key": CORPUS_KEY,
+                    "metadata_filter": f"doc.id = {filter_by_id}",
+                    "lexical_interpolation": 0.005,
+                    "custom_dimensions": {}
+                }
+            ],
+
             "limit": limit,  # Number of search results to retrieve
             # "reranker": {
             #     "type": "customer_reranker",
