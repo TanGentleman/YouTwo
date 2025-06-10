@@ -32,4 +32,7 @@ def inspect_database_tool() -> dict[str, list[str]]:
     results = fetch_documents_from_corpus(limit = 50)
     documents = VectaraDocuments(documents = results["documents"])
     id_list = [document["id"] for document in documents["documents"]]
-    return "The following documents are in the vector database:\n" + "\n".join(id_list)
+    final_string = "The following documents are in the vector database:\n"
+    for i, id in enumerate(id_list):
+        final_string += f"{i+1}. {id}\n"
+    return final_string
