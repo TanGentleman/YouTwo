@@ -269,7 +269,7 @@ def fetch_documents_from_corpus(limit: int = 10, metadata_filter: str = None, pa
     if page_key is not None:
         params["page_key"] = page_key
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=request_timeout, timeout_millis=request_timeout_millis)
+        response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
