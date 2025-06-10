@@ -170,7 +170,7 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
             "corpora":[
                 {
                     "corpus_key": CORPUS_KEY,
-                    "metadata_filter": f"doc.id = {filter_by_id}",
+                    "metadata_filter": f"doc.id = '{filter_by_id}'",
                     "lexical_interpolation": 0.005,
                     "custom_dimensions": {}
                 }
