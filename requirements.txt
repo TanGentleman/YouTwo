@@ -1,2 +1,6 @@
-gradio[mcp]
+gradio[mcp]==5.33.0
+requests
 python-dotenv
+smolagents
+fastrtc[stt]
+kokoro_onnx
