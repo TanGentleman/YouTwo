@@ -1,0 +1,10 @@
+
+.env
+node_modules
+.venv
+.DS_Store
+.env.local
+__pycache__
+build/
+.docusaurus
+backend/convex/_generated/
