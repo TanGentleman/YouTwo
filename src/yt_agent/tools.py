@@ -3,15 +3,14 @@ from src.schemas import VectaraDocuments
 from src.yt_rag.rag import fetch_documents_from_corpus, retrieve_chunks
 
 @tool
-def retrieve_tool(query: str, limit: int = 5, filter_by_id: list[str] = None) -> dict[str, list[str] | str]:
+def retrieve_tool(query: str, limit: int = 5, filter_by_id: str = None) -> dict[str, list[str] | str]:
     """
     Retrieve chunks by relevance to a query
 
     Args:
         query: The query to retrieve chunks for
         limit: The maximum number of chunks to retrieve (default: 5)
-        filter_by_id: A list of document IDs to filter by
-    
+        filter_by_id: A document ID to filter by
     Returns:
         A list of chunks, and a grounded summary
     """
@@ -22,7 +21,7 @@ def retrieve_tool(query: str, limit: int = 5, filter_by_id: list[str] = None) ->
     }
 
 @tool
-def inspect_database_tool() -> dict[str, list[str]]:
+def inspect_database_tool() -> str:
     """
     Inspect the vector database
 
