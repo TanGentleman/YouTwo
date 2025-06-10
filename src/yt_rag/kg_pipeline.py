@@ -1,9 +1,10 @@
 # Citation: https://www.marktechpost.com/2025/05/15/a-step-by-step-guide-to-build-an-automated-knowledge-graph-pipeline-using-langgraph-and-networkx/
-import re
-import networkx as nx
-import matplotlib.pyplot as plt
-# matplotlib.use('Agg')  # For headless rendering
+# import re
 
+# Must import matplotlib to visualize the graph
+# import matplotlib.pyplot as plt
+from langgraph.graph.state import CompiledStateGraph
+import networkx as nx
 from typing import TypedDict, List, Tuple, Dict, Any
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
@@ -107,7 +108,14 @@ def graph_validator(state: KGState) -> KGState:
 
     return state
 
-def visualize_graph(graph):
+def visualize_graph(graph) -> None:
+    """Visualize the knowledge graph using NetworkX and Matplotlib"""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("matplotlib is not installed. Please install it using 'pip install matplotlib'")
+        return
+    
     plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(graph)
 
@@ -120,7 +128,7 @@ def visualize_graph(graph):
     plt.tight_layout()
     plt.show()
 
-def build_kg_graph():
+def build_kg_graph() -> CompiledStateGraph:
     workflow = StateGraph(KGState)
 
     workflow.add_node("data_gatherer", data_gatherer)

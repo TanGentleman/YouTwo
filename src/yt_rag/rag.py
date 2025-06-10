@@ -4,7 +4,8 @@ import os
 from pathlib import Path
 import requests
 from pprint import pprint
-from schemas import UploadResult
+from src.schemas import UploadResult
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

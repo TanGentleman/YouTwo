@@ -7,5 +7,5 @@ class StorageUsage(TypedDict):
 
 class UploadResult(TypedDict):
     id: str
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] # NOTE: Should not need this field
     storage_usage: StorageUsage
