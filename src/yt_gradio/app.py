@@ -1,37 +1,12 @@
+from pprint import pprint
 import gradio as gr
 from pathlib import Path
 from src.yt_rag.rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
 import logging
-
+from src.yt_agent.agent import agent
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------
-
-def sync_lifelog_db() -> str:
-    """
-    Synchronizes local copy of lifelog (journal) database with the latest source.
-    This function acts as a placeholder for database connection logic.
-
-    Returns:
-        str: Status message with sync timestamp.
-    """
-    import datetime
-    return f"✅ Lifelog database synchronized successfully at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-
-
-def search_lifelogs(keyword: str, date_start: str, date_end: str) -> str:
-    """
-    Searches for lifelog entries containing the provided keyword within the specified date range.
-
-    Args:
-        keyword (str): Search term to match against entries.
-        date_start (str): Start date (YYYY-MM-DD format).
-        date_end (str): End date (inclusive, YYYY-MM-DD format).
-
-    Returns:
-        str: Simulated search result summary. Replace with actual search logic.
-    """
-    return f"🔍 Found 12 entries related to ‘{keyword}’ between {date_start} and {date_end}."
 
 
 def update_knowledge_graph_relations() -> str:
@@ -59,6 +34,30 @@ def natural_language_handler(query: str) -> str:
     chunks, response = retrieve_chunks(query, limit=5)
     return f"💬 Got {len(chunks)} chunks for your request: “{query}”. Response: {response}"
 
+def agent_handler(query: str) -> str:
+    """
+    Placeholder for unimplemented features.
+
+    Args:
+        feature_name (str): Name of the feature to query.
+
+    Returns:
+        str: Placeholder response for future functions.
+    """
+    response = agent.run(query)
+
+    print("Raw Response:\n", response)
+    if isinstance(response, dict):
+        parsed_response = response.get("output") or response.get("answer") or str(response)
+    else:
+        parsed_response = str(response)
+    print("\nParsed Agent Response:\n", parsed_response)
+
+    messages = agent.memory.get_succinct_steps()
+    print("\nParsed messages:")
+    print("**********")
+    pprint(messages)
+    return f"💬 Response Output: {parsed_response}"
 
 def placeholder(feature_name: str = "unknown") -> str:
     """
@@ -141,12 +140,13 @@ def get_gradio_blocks():
             query_out = gr.Textbox(label="System Response")
             query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
-        with gr.Tab("⚙️ Future Features"):
-            gr.Markdown("Placeholder area for upcoming functionalities")
+        with gr.Tab("⚙️ Agentic Mode"):
+            gr.Markdown("Agentic Question and Answer")
             feature = gr.Textbox(label="Feature to Check")
             feature_btn = gr.Button("Check Feature Status")
             feature_out = gr.Textbox(label="Status")
             feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
+            feature_btn.click(fn=agent_handler, inputs=feature, outputs=feature_out)
 
         with gr.Tab("🗣️Input File"):
             gr.Markdown("Input file")
