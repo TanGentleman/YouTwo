@@ -21,7 +21,7 @@ def retrieve_tool(query: str, limit: int = 5) -> dict[str, list[str] | str]:
     }
 
 @tool
-def inspect_vector_database() -> dict[str, list[str]]:
+def inspect_database_tool() -> dict[str, list[str]]:
     """
     Inspect the vector database
     """
