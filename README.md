@@ -4,7 +4,25 @@ Our gradio app for MCP-powered memory.
 
 # YouTwo Knowledge Graph Memory Server
 
-A persistent memory system using a knowledge graph, built with Convex backend. This system allows for storing information about entities, their relations, and observations across multiple interactions.
+A full RAG pipeline using Vectara, with an optional persistent memory system using a knowledge graph, built with Convex backend. This system allows for storing information about entities, their relations, and observations across multiple interactions.
+
+# This app is deployed on the current link: <>
+
+# Run this app locally
+```bash
+git clone https://github.com/TanGentleman/YouTwo
+cd YouTwo
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python run_gradio_app.py
+```
+
+# Deploy the server
+```bash
+cd YouTwo
+modal deploy run_modal_app.py
+```
 
 ## Overview
 
@@ -40,6 +58,10 @@ npm install
 ```bash
 npx convex dev
 ```
+
+Expose all our backend functions easily using MCP or even http requests. See:
+https://docs.convex.dev/client/react/deployment-urls
+https://docs.convex.dev/ai/convex-mcp-server
 
 ## API Usage
 
@@ -115,20 +137,6 @@ The system is built using Convex for the backend database and API. The codebase 
   - `distiller.ts` - Knowledge extraction from journals
   - `operations.ts` - Operation logging utilities
   - `http.ts` - HTTP API endpoints
-
-## Development
-
-For local development:
-
-1. Run the development server:
-```bash
-npx convex dev
-```
-
-2. Deploy to production when ready:
-```bash
-npx convex deploy
-```
 
 ## License
 
