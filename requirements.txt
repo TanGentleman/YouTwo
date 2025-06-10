@@ -1,6 +1,14 @@
-gradio[mcp]==5.33.0
+gradio==5.33.0
+modal==1.0.2
+smolagents==1.17.0
 requests
 python-dotenv
-smolagents
-fastrtc[stt]
-kokoro_onnx
+
+# For knowledge graph
+# langgraph
+# langchain_core
+# matplotlib
+# networkx
+
+# For vectara (Useful to get types)
+# vectara
