@@ -17,7 +17,7 @@ agent = CodeAgent(
     model=model,
     max_steps=2,
     verbosity_level=2,
-    description="Search the YouTwo architecture documentation for information.",
+    description=AGENTIC_MODE_SYSTEM_PROMPT,
 )
 
 if __name__ == "__main__":
