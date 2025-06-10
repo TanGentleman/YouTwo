@@ -80,6 +80,21 @@ def process_response(audio):
         yield audio_chunk
 
 
+def invoke_agent(query):
+    response = agent.run(query)
+
+    print("Raw Response:\n", response)
+    if isinstance(response, dict):
+        parsed_response = response.get("output") or response.get("answer") or str(response)
+    else:
+        parsed_response = str(response)
+    print("\nParsed Agent Response:\n", parsed_response)
+
+    messages = agent.memory.get_full_steps()
+    print("\nParsed messages:\n", messages)
+    return parsed_response
+
+
 stream = Stream(
     handler=ReplyOnPause(process_response, input_sample_rate=16000),
     modality="audio",
