@@ -5,7 +5,7 @@ import sys
 
 # Current directory path
 src_dir = Path(__file__).parent / "src"
-modal_dir = src_dir / "yt_modal"
+agent_dir = src_dir / "yt_agent"
 gradio_dir = src_dir / "yt_gradio"
 rag_dir = src_dir / "yt_rag"
 
@@ -18,6 +18,7 @@ web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
     # Add any other dependencies you need
 ).add_local_file(rag_dir / "rag.py", "/root/src/yt_rag/rag.py") \
 .add_local_file(gradio_dir / "app.py", "/root/src/yt_gradio/app.py") \
+.add_local_file(agent_dir / "agent.py", "/root/src/yt_agent/agent.py") \
 .add_local_file(src_dir / "schemas.py", "/root/src/schemas.py")
 
 app = modal.App("youtwo-gradio", image=web_image)
