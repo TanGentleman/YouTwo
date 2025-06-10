@@ -1,6 +1,6 @@
 import gradio as gr
 from pathlib import Path
-from rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
+from src.yt_rag.rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
 import logging
 
 # ---------------------------

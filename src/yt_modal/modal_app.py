@@ -4,7 +4,10 @@ from pathlib import Path
 import sys
 
 # Current directory path
-curr_dir = Path(__file__).parent
+src_dir = Path(__file__).parent.parent
+modal_dir = src_dir / "yt_modal"
+gradio_dir = src_dir / "yt_gradio"
+rag_dir = src_dir / "yt_rag"
 
 # Create Modal image with required dependencies
 web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
@@ -13,16 +16,18 @@ web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "gradio[mcp]==5.33.0",
     "requests",
     # Add any other dependencies you need
-).add_local_file(curr_dir / "app.py", "/root/app.py") \
-.add_local_file(curr_dir / "schemas.py", "/root/schemas.py") \
-.add_local_file(curr_dir / "rag.py", "/root/rag.py")
+).add_local_file(rag_dir / "rag.py", "/root/src/yt_rag/rag.py") \
+.add_local_file(gradio_dir / "app.py", "/root/src/yt_gradio/app.py") \
+.add_local_file(src_dir / "schemas.py", "/root/src/schemas.py")
+
+
 
 app = modal.App("youtwo-gradio", image=web_image)
 
 # Modal limits
-MAX_CONCURRENT_USERS = 20
+MAX_CONCURRENT_USERS = 10
 MINUTES = 60  # seconds
-TIME_LIMIT = 59 * MINUTES  # time limit (3540 seconds, just under the 3600s maximum)
+TIME_LIMIT = 10 * MINUTES  # time limit (3540 seconds, just under the 3600s maximum)
 
 # This volume will store any local files needed by the app
 volume = modal.Volume.from_name("youtwo-volume", create_if_missing=True)
@@ -45,7 +50,7 @@ def gradio_app():
     
     # Import RAG functions
     # from rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
-    from app import get_gradio_blocks
+    from src.yt_gradio.app import get_gradio_blocks
     
     # ---------------------------
     # Backend Functions
@@ -57,4 +62,4 @@ def gradio_app():
 
 
 if __name__ == "__main__":
-    gradio_app.serve(mcp_server=True) 
+    gradio_app.serve(mcp_server=True)

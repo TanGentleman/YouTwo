@@ -12,7 +12,7 @@ from fastrtc import (
 )
 from smolagents import CodeAgent, InferenceClientModel, tool
 
-from rag import retrieve_chunks
+from src.yt_rag.rag import retrieve_chunks
 
 # Load environment variables
 load_dotenv()
@@ -36,8 +36,6 @@ When a question requires document-based information:
 
 If information isn't in documents, use your general knowledge but state this limitation.
 """
-
-
 
 @tool
 def retrieve_tool(query: str, limit: int = 5) -> list[dict]:
