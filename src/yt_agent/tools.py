@@ -10,7 +10,8 @@ def retrieve_tool(query: str, limit: int = 5, filter_by_id: list[str] = None) ->
     Args:
         query: The query to retrieve chunks for
         limit: The maximum number of chunks to retrieve (default: 5)
-
+        filter_by_id: A list of document IDs to filter by
+    
     Returns:
         A list of chunks, and a grounded summary
     """
