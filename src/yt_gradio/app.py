@@ -71,6 +71,25 @@ def placeholder(feature_name: str = "unknown") -> str:
     """
     return f"{feature_name} functionality not available yet."  # Replace with dynamic logic later
 
+def agent_chat(message: str, chat_history: tuple[str, str]):
+    if not message.strip():
+        return chat_history, ""
+
+    # Add user message to chat
+    #chat_history.append({"role": "user", "content": message})
+
+    # Append user message to history
+    #chat_history = chat_history or []
+    chat_history.append(("You", message))
+
+    # Run your agent
+    agent_response = agent_handler(message)
+
+    # Append agent response to history
+    #chat_history.append({"role": "assistant", "content": agent_response})
+    chat_history.append(("Agent", agent_response))
+
+    return chat_history, ""
 
 # Gradio Behavior:
 # Textbox: As input component: Passes text value as a str into the function.
@@ -110,28 +129,6 @@ def get_gradio_blocks():
     with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
         gr.Markdown("## 🧠 Knowledge Graph Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
 
-        # with gr.Tab("🔄 Sync Lifelog DB"):
-        #     gr.Markdown("Synchronize the lifelog database locally.")
-        #     sync_btn = gr.Button("Sync Database")
-        #     sync_out = gr.Textbox(lines=2, label="Sync Status")
-        #     sync_btn.click(fn=sync_lifelog_db, outputs=sync_out)
-
-        # with gr.Tab("🔍 Search Lifelogs"):
-        #     gr.Markdown("Search lifelog entries by keyword and time range.")
-        #     keyword = gr.Textbox(label="Search Keyword")
-        #     with gr.Row():
-        #         start_date = gr.Textbox(label="Start Date (YYYY-MM-DD)")
-        #         end_date = gr.Textbox(label="End Date (YYYY-MM-DD)")
-        #     search_btn = gr.Button("Search Entries")
-        #     search_out = gr.Textbox(label="Search Results")
-        #     search_btn.click(fn=search_lifelogs, inputs=[keyword, start_date, end_date], outputs=search_out)
-
-        # with gr.Tab("🧠 Update Knowledge Graph"):
-        #     gr.Markdown("Use lifelog data to update knowledge graph relations.")
-        #     update_btn = gr.Button("Update Graph")
-        #     update_out = gr.Textbox(label="Update Status")
-        #     update_btn.click(fn=update_knowledge_graph_relations, outputs=update_out)
-
         with gr.Tab("🗣️ Natural Language Mode"):
             gr.Markdown("Input natural language requests for system actions.")
             with gr.Row():
@@ -140,13 +137,38 @@ def get_gradio_blocks():
             query_out = gr.Textbox(label="System Response")
             query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
-        with gr.Tab("⚙️ Agentic Mode"):
+        with gr.Tab("⚙️ Simple Agent"):
             gr.Markdown("Agentic Question and Answer")
             feature = gr.Textbox(label="Feature to Check")
             feature_btn = gr.Button("Check Feature Status")
             feature_out = gr.Textbox(label="Status")
             feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
             feature_btn.click(fn=agent_handler, inputs=feature, outputs=feature_out)
+        
+        with gr.Tab("⚙️ Agentic Chat"):
+            gr.Markdown("Agentic Question and Answer1")
+            chatbot = gr.Chatbot(label="KG Agent", height=500, show_label=True, container=True,
+                bubble_full_width=False,
+                value=[
+                    (None, "👋 Hello! I'm the KG Agent, your intelligent assistant for serving KG. How can I help you today?")
+                ])
+            user_input = gr.Textbox(placeholder="Type your question...", label="Message", lines=2, scale=4, show_label=False)
+            #clear_button = gr.Button("🗑️ Clear Chat", size="sm")
+            send_btn = gr.Button("Send", variant="primary", scale=1)
+
+            # Wire up the button (and hitting Enter) to call `agent_chat`
+            send_btn.click(
+                fn=agent_chat,
+                inputs=[user_input, chatbot],
+                outputs=[chatbot, user_input],
+                show_progress=True
+            )
+            user_input.submit(
+                fn=agent_chat,
+                inputs=[user_input, chatbot],
+                outputs=[chatbot, user_input],
+                #outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
+            )
 
         with gr.Tab("🗣️Input File"):
             gr.Markdown("Input file")
