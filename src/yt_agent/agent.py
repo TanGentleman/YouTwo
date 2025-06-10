@@ -12,7 +12,7 @@ model = InferenceClientModel(provider="nebius", model="nebius/Qwen/Qwen3-30B-A3B
 agent = CodeAgent(
     tools=[
         retrieve_tool,
-        inspect_database_tool,
+        # inspect_database_tool,
     ],
     model=model,
     max_steps=2,

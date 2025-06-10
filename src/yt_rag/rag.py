@@ -277,6 +277,65 @@ def fetch_documents_from_corpus(limit: int = 10, metadata_filter: str = None, pa
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred while fetching documents: {e}") from e
 
+def fetch_document_by_id(document_id: str) -> dict:
+    """
+    Retrieves the content and metadata of a specific document by its ID.
+    
+    Args:
+        document_id (str): The document ID to retrieve. Must be percent encoded.
+        
+    Returns:
+        dict: The document data including content and metadata.
+        
+    Raises:
+        VectaraAPIError: If there's an error with the Vectara API request.
+    """
+    import os
+    import requests
+    from urllib.parse import quote
+    
+    CORPUS_KEY = "YouTwo"
+    request_timeout = 20
+    request_timeout_millis = 60000
+    
+    # Validate corpus key
+    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
+        raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
+    
+    # Prepare request
+    vectara_api_key = os.getenv("VECTARA_API_KEY")
+    
+    if not vectara_api_key:
+        raise VectaraAPIError("Vectara API key not found in environment variables")
+    
+    # Ensure document_id is percent encoded
+    encoded_document_id = quote(document_id)
+    
+    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/documents/{encoded_document_id}"
+    
+    headers = {
+        "Accept": "application/json",
+        "x-api-key": vectara_api_key
+    }
+    
+    payload = {}
+    
+    # Set timeout parameters if needed
+    params = {}
+    if request_timeout is not None:
+        headers["Request-Timeout"] = str(request_timeout)
+    if request_timeout_millis is not None:
+        headers["Request-Timeout-Millis"] = str(request_timeout_millis)
+        
+    try:
+        response = requests.get(url, headers=headers, params=params, data=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise VectaraAPIError(f"Error fetching document from Vectara: {e}") from e
+    except Exception as e:
+        raise VectaraAPIError(f"An unexpected error occurred while fetching document: {e}") from e
+
 
 # This is still a placeholder
 def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str], summary: str) -> str:
@@ -314,6 +373,7 @@ def test_file_upload():
         upload_file_to_vectara(pdf_bytes, pdf_path.name)
     except Exception as e:
         raise IndexingError(f"Error occurred while uploading PDF: {e}")
+
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
