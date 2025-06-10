@@ -158,33 +158,19 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
         "x-api-key": api_key,
         "Content-Type": "application/json"
     }
-
-    # if filter_by_id:
-    #     return f"doc.id = {filter_by_id}"
-    # else:
-    #     return None
-    
+    metadata_filter = f"doc.id='{filter_by_id}'" if filter_by_id else None
+    if metadata_filter:
+        search = {
+            "metadata_filter": metadata_filter,
+            "limit": limit,
+        }
+    else:
+        search = {
+            "limit": limit,
+        }
     payload = {
         "query": query,
-        "search": {
-            "corpora":[
-                {
-                    "corpus_key": CORPUS_KEY,
-                    "metadata_filter": f"doc.id = '{filter_by_id}'",
-                    "lexical_interpolation": 0.005,
-                    "custom_dimensions": {}
-                }
-            ],
-
-            "limit": limit,  # Number of search results to retrieve
-            # "reranker": {
-            #     "type": "customer_reranker",
-            #     "reranker_name": "Rerank_Multilingual_v1",
-            #     "limit": 0,
-            #     "cutoff": 0,
-            #     "include_context": True
-            # }
-        },
+        "search": search,
         "generation": {
             "generation_preset_name": "mockingbird-2.0", # Using Mockingbird for RAG
             "max_used_search_results": 5,
