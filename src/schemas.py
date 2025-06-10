@@ -9,3 +9,17 @@ class UploadResult(TypedDict):
     id: str
     metadata: Dict[str, Any] # NOTE: Should not need this field
     storage_usage: StorageUsage
+
+class VectaraDocument(TypedDict):
+    id: str
+    metadata: Dict[str, Any]
+    # tables: list[Dict[str, Any]]
+    # parts: list[Dict[str, Any]] # NOTE: Only available when by list ID
+    # storage_usage: StorageUsage
+    # extraction_usage: Dict[str, Any]
+
+
+class VectaraDocuments(TypedDict):
+    documents: list[VectaraDocument]
+    # metadata: Dict[str, Any]
+    # page_key: str

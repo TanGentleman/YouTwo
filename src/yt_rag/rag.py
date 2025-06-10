@@ -35,6 +35,7 @@ def load_environment_variables():
         raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
 
 
+
 def is_allowed_filetype(suffix: str):
     # Commonmark / Markdown (md extension).
     # PDF/A (pdf).
@@ -212,6 +213,69 @@ def retrieve_chunks(query: str, limit: int = 10) -> tuple[list[str], str]:
         raise VectaraAPIError(f"Error querying Vectara: {e}") from e
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred during Vectara query: {e}") from e
+
+def fetch_documents_from_corpus(limit: int = 10, metadata_filter: str = None, page_key: str = None) -> dict:
+    """
+    Fetches documents from a specific Vectara corpus.
+    
+    Args:
+        limit (int, optional): Maximum number of documents to return. Must be between 1 and 100. Defaults to 10.
+        metadata_filter (str, optional): Filter documents by metadata. Uses expression similar to query metadata filter.
+        page_key (str, optional): Key used to retrieve the next page of documents after the limit has been reached.
+        request_timeout (int, optional): Time in seconds the API will attempt to complete the request before timing out.
+        request_timeout_millis (int, optional): Time in milliseconds the API will attempt to complete the request.
+    
+    Returns:
+        dict: The response from the Vectara API containing the requested documents.
+        
+    Raises:
+        VectaraAPIError: If there's an error with the Vectara API request.
+    """
+    import os
+    import requests
+    CORPUS_KEY = "YouTwo"
+    request_timeout = 20
+    request_timeout_millis = 60000
+
+
+    # Validate inputs
+    if limit is not None and (limit < 1 or limit > 100):
+        raise ValueError("Limit must be between 1 and 100")
+    
+    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
+        raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
+    
+    # Prepare request
+    vectara_api_key = os.getenv("VECTARA_API_KEY")
+    
+    if not vectara_api_key:
+        raise VectaraAPIError("Vectara API key not found in environment variables")
+    
+    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/documents"
+    
+    headers = {
+        "Accept": "application/json",
+        "x-api-key": vectara_api_key
+    }
+    
+    payload = {}
+    
+    # Build query params
+    params = {}
+    if limit is not None:
+        params["limit"] = limit
+    if metadata_filter is not None:
+        params["metadata_filter"] = metadata_filter
+    if page_key is not None:
+        params["page_key"] = page_key
+    try:
+        response = requests.get(url, headers=headers, params=params, timeout=request_timeout, timeout_millis=request_timeout_millis)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise VectaraAPIError(f"Error fetching documents from Vectara corpus: {e}") from e
+    except Exception as e:
+        raise VectaraAPIError(f"An unexpected error occurred while fetching documents: {e}") from e
 
 
 # This is still a placeholder
