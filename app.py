@@ -107,54 +107,57 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
 # Gradio UI (Blocks API)
 # ---------------------------
 
-with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
-    gr.Markdown("## 🧠 Knowledge Graph Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
+def get_gradio_blocks():
+    with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
+        gr.Markdown("## 🧠 Knowledge Graph Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
 
-    with gr.Tab("🔄 Sync Lifelog DB"):
-        gr.Markdown("Synchronize the lifelog database locally.")
-        sync_btn = gr.Button("Sync Database")
-        sync_out = gr.Textbox(lines=2, label="Sync Status")
-        sync_btn.click(fn=sync_lifelog_db, outputs=sync_out)
+        with gr.Tab("🔄 Sync Lifelog DB"):
+            gr.Markdown("Synchronize the lifelog database locally.")
+            sync_btn = gr.Button("Sync Database")
+            sync_out = gr.Textbox(lines=2, label="Sync Status")
+            sync_btn.click(fn=sync_lifelog_db, outputs=sync_out)
 
-    with gr.Tab("🔍 Search Lifelogs"):
-        gr.Markdown("Search lifelog entries by keyword and time range.")
-        keyword = gr.Textbox(label="Search Keyword")
-        with gr.Row():
-            start_date = gr.Textbox(label="Start Date (YYYY-MM-DD)")
-            end_date = gr.Textbox(label="End Date (YYYY-MM-DD)")
-        search_btn = gr.Button("Search Entries")
-        search_out = gr.Textbox(label="Search Results")
-        search_btn.click(fn=search_lifelogs, inputs=[keyword, start_date, end_date], outputs=search_out)
+        with gr.Tab("🔍 Search Lifelogs"):
+            gr.Markdown("Search lifelog entries by keyword and time range.")
+            keyword = gr.Textbox(label="Search Keyword")
+            with gr.Row():
+                start_date = gr.Textbox(label="Start Date (YYYY-MM-DD)")
+                end_date = gr.Textbox(label="End Date (YYYY-MM-DD)")
+            search_btn = gr.Button("Search Entries")
+            search_out = gr.Textbox(label="Search Results")
+            search_btn.click(fn=search_lifelogs, inputs=[keyword, start_date, end_date], outputs=search_out)
 
-    with gr.Tab("🧠 Update Knowledge Graph"):
-        gr.Markdown("Use lifelog data to update knowledge graph relations.")
-        update_btn = gr.Button("Update Graph")
-        update_out = gr.Textbox(label="Update Status")
-        update_btn.click(fn=update_knowledge_graph_relations, outputs=update_out)
+        with gr.Tab("🧠 Update Knowledge Graph"):
+            gr.Markdown("Use lifelog data to update knowledge graph relations.")
+            update_btn = gr.Button("Update Graph")
+            update_out = gr.Textbox(label="Update Status")
+            update_btn.click(fn=update_knowledge_graph_relations, outputs=update_out)
 
-    with gr.Tab("🗣️ Natural Language Mode"):
-        gr.Markdown("Input natural language requests for system actions.")
-        with gr.Row():
-            user_query = gr.Textbox(label="Type your query")
-        query_btn = gr.Button("Process Request")
-        query_out = gr.Textbox(label="System Response")
-        query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
+        with gr.Tab("🗣️ Natural Language Mode"):
+            gr.Markdown("Input natural language requests for system actions.")
+            with gr.Row():
+                user_query = gr.Textbox(label="Type your query")
+            query_btn = gr.Button("Process Request")
+            query_out = gr.Textbox(label="System Response")
+            query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
-    with gr.Tab("⚙️ Future Features"):
-        gr.Markdown("Placeholder area for upcoming functionalities")
-        feature = gr.Textbox(label="Feature to Check")
-        feature_btn = gr.Button("Check Feature Status")
-        feature_out = gr.Textbox(label="Status")
-        feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
+        with gr.Tab("⚙️ Future Features"):
+            gr.Markdown("Placeholder area for upcoming functionalities")
+            feature = gr.Textbox(label="Feature to Check")
+            feature_btn = gr.Button("Check Feature Status")
+            feature_out = gr.Textbox(label="Status")
+            feature_btn.click(fn=placeholder, inputs=feature, outputs=feature_out)
 
-    with gr.Tab("🗣️Input File"):
-        gr.Markdown("Input file")
-        with gr.Row():
-            file_path_input = gr.Textbox(label="Enter File Path")
-            file_upload_input = gr.File(label="Upload a File", type="filepath")
-        submit_btn = gr.Button("Submit")
-        output = gr.Textbox(label="Result")
-        submit_btn.click(fn=handle_file_input, inputs=[file_path_input, file_upload_input], outputs=output)
+        with gr.Tab("🗣️Input File"):
+            gr.Markdown("Input file")
+            with gr.Row():
+                file_path_input = gr.Textbox(label="Enter File Path")
+                file_upload_input = gr.File(label="Upload a File", type="filepath")
+            submit_btn = gr.Button("Submit")
+            output = gr.Textbox(label="Result")
+            submit_btn.click(fn=handle_file_input, inputs=[file_path_input, file_upload_input], outputs=output)
+
+    return demo
 
 # ---------------------------
 # Launch as MCP Server
@@ -162,4 +165,5 @@ with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
+    demo = get_gradio_blocks()
     demo.launch(mcp_server=True)

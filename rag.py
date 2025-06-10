@@ -45,7 +45,7 @@ def is_allowed_filetype(suffix: str):
     # LXML files (.lxml).
     # RTF files (.rtf).
     # ePUB files (.epub).
-    return suffix in [".pdf", ".odt", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".html", ".lxml", ".rtf", ".epub"]
+    return suffix in [".md", ".pdf", ".odt", ".doc", ".docx", ".ppt", ".pptx", ".txt", ".html", ".lxml", ".rtf", ".epub"]
 
 def save_response_to_file(response_json: dict, filename: str):
     """
