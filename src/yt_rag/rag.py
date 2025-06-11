@@ -215,7 +215,7 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred during Vectara query: {e}") from e
 
-def fetch_documents_from_corpus(limit: int = 10, metadata_filter: str = None, page_key: str = None) -> dict:
+def fetch_documents_from_corpus(limit: int = 50, metadata_filter: str = None, page_key: str = None) -> dict:
     """
     Fetches documents from a specific Vectara corpus.
     
@@ -337,7 +337,6 @@ def fetch_document_by_id(document_id: str) -> dict:
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred while fetching document: {e}") from e
 
-
 # This is still a placeholder
 def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str], summary: str) -> str:
     """
@@ -379,6 +378,11 @@ def test_file_upload():
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
-    chunks, summary = retrieve_chunks("What is the main idea of the document?")
-    print(chunks)
-    print(summary)
+    # chunks, summary = retrieve_chunks("What is the main idea of the document?")
+    # print(chunks)
+    # print(summary)
+    docs = fetch_document_by_id('intro.md')
+    pprint(docs)
+    # save to json
+    with open('intro.md.json', 'w') as f:
+        json.dump(docs, f)
