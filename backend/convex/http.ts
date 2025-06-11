@@ -114,13 +114,25 @@ http.route({
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
-    const query = url.searchParams.get("q") || "";
+    const query = url.searchParams.get("q");
+    if (!query) {
+      return new Response(JSON.stringify({ error: "No query provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     
-    const result = await ctx.runQuery(internal.knowledge.searchNodes, { query });
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runQuery(internal.knowledge.searchNodes, { query });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex query failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
@@ -144,12 +156,17 @@ http.route({
         }
       );
     }
-    
-    const result = await ctx.runQuery(internal.knowledge.openNodes, { names });
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runQuery(internal.knowledge.openNodes, { names });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex query failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
@@ -171,14 +188,19 @@ http.route({
         }
       );
     }
-    
-    const result = await ctx.runMutation(internal.entities.deleteEntities, {
-      entityNames: body.entityNames
-    });
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runMutation(internal.entities.deleteEntities, {
+        entityNames: body.entityNames
+      });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex mutation failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
@@ -200,14 +222,19 @@ http.route({
         }
       );
     }
-    
-    const result = await ctx.runMutation(internal.entities.deleteObservations, {
-      deletions: body.deletions
-    });
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runMutation(internal.entities.deleteObservations, {
+        deletions: body.deletions
+      });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex mutation failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
@@ -229,14 +256,53 @@ http.route({
         }
       );
     }
-    
-    const result = await ctx.runMutation(internal.relations.deleteRelations, {
-      relations: body.relations
-    });
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runMutation(internal.relations.deleteRelations, {
+        relations: body.relations
+      });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex mutation failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }),
+});
+
+/**
+ * Create chunks via HTTP API
+ */
+
+http.route({
+  path: "/chunks",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+    if (!body.chunks || !Array.isArray(body.chunks)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request body, chunks array required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+    try {
+      const result = await ctx.runMutation(internal.chunks.createChunks, { 
+        chunks: body.chunks 
+      });
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex mutation failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
