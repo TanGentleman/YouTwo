@@ -2,11 +2,12 @@ import { GenericMutationCtx } from "convex/server";
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { DataModel, Id } from "./_generated/dataModel";
+import { operationsDoc } from "./schema";
 
 
 export async function createOperation(ctx: GenericMutationCtx<DataModel>, args: {
   operation: "distill" | "create" | "read" | "update" | "delete";
-  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata";
+  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata" | "chunks";
   success: boolean;
   message?: string;
   error?: string;
@@ -28,39 +29,12 @@ export async function createOperation(ctx: GenericMutationCtx<DataModel>, args: 
  */
 export const createOperations = internalMutation({
   args: {
-    operations: v.array(v.object({
-      operation: v.union(
-        v.literal("distill"),
-        v.literal("create"),
-        v.literal("read"),
-        v.literal("update"),
-        v.literal("delete")
-      ),
-      table: v.union(
-        v.literal("journals"),
-        v.literal("knowledge"),
-        v.literal("entities"),
-        v.literal("relations"),
-        v.literal("metadata"),
-        v.literal("markdownEmbeddings")
-      ),
-      success: v.boolean(),
-      message: v.optional(v.string()),
-      error: v.optional(v.string()),
-    })),
+    operations: v.array(operationsDoc),
   },
   handler: async (ctx, args) => {
     const operationIds: Id<"operations">[] = [];
     for (const operation of args.operations) {
-      const operationId = await ctx.db.insert("operations", {
-        operation: operation.operation,
-        table: operation.table,
-        success: operation.success,
-        data: {
-          message: operation.message,
-          error: operation.error,
-        },
-      });
+      const operationId = await ctx.db.insert("operations", operation);
       operationIds.push(operationId);
     }
     return operationIds;

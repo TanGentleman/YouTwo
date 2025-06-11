@@ -71,6 +71,7 @@ export const createJournal = internalMutation({
         endTime: args.endTime,
         syncedUntil: 0, // Haven't processed any journals yet
         journalIds: [journalId],
+        chunkFilenames: [],
       });
     }
     

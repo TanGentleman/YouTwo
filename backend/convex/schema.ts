@@ -49,6 +49,7 @@ export const operationsDoc = v.object({
     v.literal('relations'),
     v.literal('metadata'),
     v.literal('markdownEmbeddings'),
+    v.literal('chunks'),
   ),
   success: v.boolean(),
   data: v.object({
@@ -63,6 +64,7 @@ export const metadataDoc = v.object({
   endTime: v.number(), // Latest record timestamp
   syncedUntil: v.number(), // Timestamp of last knowledge extraction
   journalIds: v.array(v.id('journals')), // List of all journal IDs
+  chunkFilenames: v.array(v.string()), // List of all chunk filenames
 });
 
 // Vector embeddings for semantic search
@@ -70,6 +72,24 @@ export const markdownEmbeddingDoc = v.object({
   markdown: v.string(), // The text content being embedded
   embedding: v.optional(v.array(v.number())), // Vector representation
   journalId: v.id('journals'), // Reference to the journal entry
+});
+
+export const chunksDoc = v.object({
+  filename: v.string(),
+  title: v.string(),
+  parts: v.array(
+    v.object({
+      text: v.string(),
+      context: v.string(),
+      metadata: v.object({
+        breadcrumb: v.optional(v.array(v.string())),
+        is_title: v.optional(v.boolean()),
+        title: v.optional(v.string()),
+        offset: v.optional(v.number()),
+      }
+    ),
+    })
+  ),
 });
 
 export default defineSchema({
@@ -91,8 +111,9 @@ export default defineSchema({
       vectorField: 'embedding',
       dimensions: 1536, // OpenAI's embedding size
   }),
-  
+  chunks: defineTable(chunksDoc),
+    // .index("by_filename", ["filename"]),
   // System tables
   metadata: defineTable(metadataDoc),
-  operations: defineTable(operationsDoc),
+  operations: defineTable(operationsDoc)
 });
