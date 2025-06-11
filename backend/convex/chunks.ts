@@ -7,7 +7,6 @@ import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 import { chunksDoc } from './schema';
 import { paginationOptsValidator } from 'convex/server';
-import { internal } from './_generated/api';
 import { createOperation } from './operations';
 import { getOrCreateMetadata } from './metadata';
 
@@ -51,6 +50,17 @@ export const createChunks = internalMutation({
         filename: chunk.filename
       });
     }
+    const updatedChunkInfo = [...(currentMetadata.chunkInfo || []), ...createdChunkIds.map(chunk => ({
+      convexId: chunk.id,
+      filename: chunk.filename,
+    }))]
+    await ctx.db.insert("metadata", {
+      startTime: Math.min(currentMetadata.startTime || 0),
+      chunkInfo: updatedChunkInfo,
+      endTime: Math.max(currentMetadata.endTime || 0),
+      syncedUntil: Date.now(),
+      journalInfo: currentMetadata.journalInfo,
+    });
 
     // Log the creation operation
     await createOperation(ctx, {
