@@ -32,7 +32,7 @@ def natural_language_handler(query: str) -> str:
         str: Simulated or generated action and result.
     """
     chunks, response = retrieve_chunks(query, limit=5)
-    return f"💬 Got {len(chunks)} chunks for your request: “{query}”. Response: {response}"
+    return f"*Retrieved {len(chunks)} chunks.*\n------\n{response}"
 
 def agent_chat(message: str, chat_history):
     if not message.strip():
@@ -88,10 +88,10 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
 # ---------------------------
 
 def get_gradio_blocks():
-    with gr.Blocks(title="Knowledge Graph Agent Interface") as demo:
-        gr.Markdown("## 🧠 Knowledge Graph Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
+    with gr.Blocks(title="YouTwo Memory Agent Interface") as demo:
+        gr.Markdown("## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
 
-        with gr.Tab("🗣️ Natural Language Mode"):
+        with gr.Tab("🗣️ Grounded Q&A"):
             gr.Markdown("Input natural language requests for system actions.")
             with gr.Row():
                 user_query = gr.Textbox(label="Type your query")
@@ -100,13 +100,13 @@ def get_gradio_blocks():
             query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
 
         with gr.Tab("⚙️ Agentic Chat"):
-            gr.Markdown("Agentic Question and Answer1")
-            chatbot = gr.Chatbot(label="KG Agent", height=500, show_label=True, container=True, type="messages",
+            gr.Markdown("Chat using memory tools")
+            chatbot = gr.Chatbot(label="YT Agent", height=500, show_label=True, container=True, type="messages",
                 bubble_full_width=False,
                 value=[
-                    {"role": "assistant", "content": "👋 Hello! I'm the KG Agent, your intelligent assistant for serving KG. How can I help you today?"}
+                    {"role": "assistant", "content": "👋 Hello! I'm the YouTwo Agent, your intelligent assistant for really good memory. How can I help you today?"}
                 ])
-            user_input = gr.Textbox(placeholder="Type your question...", label="Message", lines=2, scale=4, show_label=False)
+            user_input = gr.Textbox(placeholder="Type your question...", label="Message", lines=2, scale=4, show_label=False, value="Inspect the database, then tell me about the connection of psychotherapy and theater.")
             #clear_button = gr.Button("🗑️ Clear Chat", size="sm")
             send_btn = gr.Button("Send", variant="primary", scale=1)
 

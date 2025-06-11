@@ -8,7 +8,7 @@ from src.yt_agent.tools import retrieve_tool, inspect_database_tool
 # Load environment variables
 load_dotenv()
 # Initialize models
-model = InferenceClientModel(provider="nebius", model="nebius/Qwen/Qwen3-30B-A3B", api_key=os.environ["NEBIUS_API_KEY"])
+model = InferenceClientModel(provider="nebius", model="nebius/deepseek-ai/DeepSeek-V3-0324-fast", api_key=os.environ["NEBIUS_API_KEY"])
 agent = CodeAgent(
     tools=[
         retrieve_tool,
