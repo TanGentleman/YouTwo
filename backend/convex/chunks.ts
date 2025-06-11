@@ -9,6 +9,7 @@ import { chunksDoc } from './schema';
 import { paginationOptsValidator } from 'convex/server';
 import { internal } from './_generated/api';
 import { createOperation } from './operations';
+import { getOrCreateMetadata } from './metadata';
 
 // Default values for querying
 const defaultLimit = 10;
@@ -35,7 +36,14 @@ export const createChunks = internalMutation({
       throw new Error("No chunks to create");
     }
 
+    const currentMetadata = await getOrCreateMetadata(ctx);
+
+    const existingFilenames = new Set(currentMetadata.chunkInfo?.map(info => info.filename) ?? []);
     for (const chunk of args.chunks) {
+      if (existingFilenames.has(chunk.filename)) {
+        throw new Error(`Chunk with filename ${chunk.filename} already exists`);
+      }
+      existingFilenames.add(chunk.filename);
       // Insert the chunk document
       const id = await ctx.db.insert('chunks', chunk);
       createdChunkIds.push({
@@ -107,7 +115,7 @@ export const getChunksByFilename = internalQuery({
       // Use the filename field rather than _id
       const chunk = await ctx.db
         .query('chunks')
-        .filter((q) => q.eq(q.field('filename'), filename))
+        .withIndex('by_filename', (q) => q.eq('filename', filename))
         .first();
 
       if (chunk) {

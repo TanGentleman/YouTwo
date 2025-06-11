@@ -123,8 +123,8 @@ export default defineSchema({
       vectorField: 'embedding',
       dimensions: 1536, // OpenAI's embedding size
   }),
-  chunks: defineTable(chunksDoc),
-    // .index("by_filename", ["filename"]),
+  chunks: defineTable(chunksDoc)
+    .index("by_filename", ["filename"]),
   // System tables
   metadata: defineTable(metadataDoc),
   operations: defineTable(operationsDoc)

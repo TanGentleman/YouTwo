@@ -4,6 +4,7 @@ import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { createOperation } from "./operations";
 import { journalInfo } from "./schema";
+import { getOrCreateMetadata } from "./metadata";
 
 /**
  * Create a new journal entry
@@ -18,10 +19,7 @@ export const createJournal = internalMutation({
   },
   handler: async (ctx, args) => {
     // Check most recent metadata document
-    const currentMetadata = await ctx.db.query('metadata').order('desc').first();
-    if (currentMetadata === null) {
-      throw new Error("No metadata found");
-    }
+    const currentMetadata = await getOrCreateMetadata(ctx);
     // if (mostRecentMetadata && mostRecentMetadata.journalInfo) {
     //   const existingReferenceLists = mostRecentMetadata.journalInfo.map(journal => journal.references);
     //   // validation logic here

@@ -2,10 +2,29 @@
  * This file defines the CRUD (Create, Read, Update, Delete) operations
  * for the 'metadata' table in the Convex database.
  */
-import { internalQuery, internalMutation } from './_generated/server';
+import { internalQuery, internalMutation, MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { metadataDoc } from './schema';
 import { createOperation } from './operations';
+
+export const getOrCreateMetadata = async (ctx: MutationCtx) => {
+    const currentMetadata = await ctx.db.query('metadata').order('desc').first();
+    if (!currentMetadata) {
+      const id = await ctx.db.insert('metadata', {
+        chunkInfo: [],
+        journalInfo: [],
+        startTime: 0,
+        endTime: 0,
+        syncedUntil: 0,
+      });
+      const newMetadata = await ctx.db.get(id);
+      if (!newMetadata) {
+        throw new Error("Failed to create metadata");
+      }
+      return newMetadata;
+    }
+    return currentMetadata;
+  };
 
 // === CREATE ===
 
@@ -21,7 +40,7 @@ export const createMetadata = internalMutation({
   },
   handler: async (ctx, args) => {
     // Check most recent metadata document
-    const mostRecentMetadata = await ctx.db.query('metadata').order('desc').first();
+    // const mostRecentMetadata = await ctx.db.query('metadata').order('desc').first();
     // if (mostRecentMetadata) {
     //   // validation logic here
     // }
