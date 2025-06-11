@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any, TypedDict
+from src.schemas import VectaraDocuments
 from src.yt_rag.rag import fetch_documents_from_corpus, fetch_document_by_id
 import requests
 import json
@@ -173,7 +174,9 @@ def main(max_docs: int = 10):
         # 1. Client gets vectara documents 
         success = False
         # Using a hardcoded list for testing
-        id_list = ["intro.md"]
+        results = fetch_documents_from_corpus(limit = 50)
+        documents = VectaraDocuments(documents = results["documents"])
+        id_list = [document["id"] for document in documents["documents"]]
         logger.info(f"Processing documents with IDs: {id_list}")
         
         processed_chunks = []
