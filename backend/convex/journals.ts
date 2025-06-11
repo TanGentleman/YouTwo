@@ -188,13 +188,11 @@ export const updateJournal = internalMutation({
       });
     }
     
-    await ctx.db.insert("operations", {
+    await createOperation(ctx, {
       operation: "update",
       table: "journals",
       success: true,
-      data: {
-        message: `Journal "${journal.title}" updated`,
-      },
+      message: `Journal "${journal.title}" updated`,
     });
     
     return args.id;
@@ -233,13 +231,11 @@ export const deleteJournal = internalMutation({
     // Delete the journal
     await ctx.db.delete(args.id);
     
-    await ctx.db.insert("operations", {
+    await createOperation(ctx, {
       operation: "delete",
       table: "journals",
       success: true,
-      data: {
-        message: `Journal "${journal.title}" deleted`,
-      },
+      message: `Journal "${journal.title}" deleted`,
     });
     
     return args.id;

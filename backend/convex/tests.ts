@@ -150,7 +150,9 @@ export const runTests = internalAction({
             operation: "read",
             table: "entities",
             success: true,
-            message: `Test suite completed: ${results.passed} passed, ${results.failed} failed`
+            data: {
+              message: `Test suite completed: ${results.passed} passed, ${results.failed} failed`
+            }
           }
         ]
       });
@@ -162,7 +164,9 @@ export const runTests = internalAction({
             operation: "read",
             table: "entities",
             success: false,
-            error: `Test suite failed with error: ${error}`
+            data: {
+              error: `Test suite failed with error: ${error}`
+            }
           }
         ]
       });
@@ -365,7 +369,9 @@ export const testHttpEndpoints = internalAction({
             operation: "read",
             table: "entities",
             success: true,
-            message: `HTTP test suite completed: ${results.passed} passed, ${results.failed} failed`
+            data: {
+              message: `HTTP test suite completed: ${results.passed} passed, ${results.failed} failed`
+            }
           }
         ]
       });
@@ -377,7 +383,9 @@ export const testHttpEndpoints = internalAction({
             operation: "read",
             table: "entities",
             success: false,
-            error: `HTTP test suite failed with error: ${error}`
+            data: {
+              error: `HTTP test suite failed with error: ${error}`
+            }
           }
         ]
       });

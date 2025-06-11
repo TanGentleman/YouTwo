@@ -28,8 +28,12 @@ export const createChunks = internalMutation({
   args: {
     chunks: v.array(chunksDoc),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<ChunkReturnData[]> => {
     const createdChunkIds: ChunkReturnData[] = [];
+
+    if (args.chunks.length === 0) {
+      throw new Error("No chunks to create");
+    }
 
     for (const chunk of args.chunks) {
       // Insert the chunk document

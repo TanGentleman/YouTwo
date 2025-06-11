@@ -1,6 +1,17 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
+import { createOperation } from "./operations";
+import { Id } from "./_generated/dataModel";
 
+type EntityResult = {
+  success: boolean;
+  id?: Id<"entities">;
+  name: string;
+  reason?: string;
+  addedObservations?: string[];
+  relationsRemoved?: number;
+  observationsRemoved?: number;
+};
 /**
  * Create multiple new entities in the knowledge graph
  */
@@ -14,8 +25,8 @@ export const createEntities = internalMutation({
       })
     ),
   },
-  handler: async (ctx, args) => {
-    const results = [];
+  handler: async (ctx, args): Promise<EntityResult[]> => {
+    const results: EntityResult[] = [];
     
     for (const entity of args.entities) {
       // Check if entity with this name already exists
@@ -63,8 +74,8 @@ export const addObservations = internalMutation({
       })
     ),
   },
-  handler: async (ctx, args) => {
-    const results = [];
+  handler: async (ctx, args): Promise<EntityResult[]> => {
+    const results: EntityResult[] = [];
     
     for (const item of args.observations) {
       // Find the entity
@@ -76,7 +87,7 @@ export const addObservations = internalMutation({
       if (entity) {
         // Get current observations and add new ones (avoiding duplicates)
         const currentObservations = new Set(entity.observations);
-        const newObservations = [];
+        const newObservations: string[] = [];
         
         for (const obs of item.contents) {
           if (!currentObservations.has(obs)) {
@@ -93,13 +104,13 @@ export const addObservations = internalMutation({
         
         results.push({
           success: true,
-          entityName: item.entityName,
+          name: item.entityName,
           addedObservations: newObservations,
         });
       } else {
         results.push({
           success: false,
-          entityName: item.entityName,
+          name: item.entityName,
           reason: "Entity not found",
         });
       }
@@ -116,8 +127,8 @@ export const deleteEntities = internalMutation({
   args: {
     entityNames: v.array(v.string()),
   },
-  handler: async (ctx, args) => {
-    const results = [];
+  handler: async (ctx, args): Promise<EntityResult[]> => {
+    const results: EntityResult[] = [];
     
     for (const name of args.entityNames) {
       // Find the entity
@@ -187,8 +198,8 @@ export const deleteObservations = internalMutation({
       })
     ),
   },
-  handler: async (ctx, args) => {
-    const results = [];
+  handler: async (ctx, args): Promise<EntityResult[]> => {
+    const results: EntityResult[] = [];
     
     for (const item of args.deletions) {
       // Find the entity
@@ -217,13 +228,13 @@ export const deleteObservations = internalMutation({
         
         results.push({
           success: true,
-          entityName: item.entityName,
+          name: item.entityName,
           observationsRemoved: removedCount,
         });
       } else {
         results.push({
           success: false,
-          entityName: item.entityName,
+          name: item.entityName,
           reason: "Entity not found",
         });
       }
