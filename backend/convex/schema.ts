@@ -58,13 +58,25 @@ export const operationsDoc = v.object({
   }),
 });
 
+export const chunkInfo = v.object({
+  filename: v.string(),
+  convexId: v.id('chunks'),
+});
+
+export const journalInfo = v.object({
+  convexId: v.id('journals'),
+  references: v.array(v.string()),
+});
+
 // Metadata stores system-wide information
 export const metadataDoc = v.object({
   startTime: v.number(), // Earliest record timestamp
   endTime: v.number(), // Latest record timestamp
   syncedUntil: v.number(), // Timestamp of last knowledge extraction
-  journalIds: v.array(v.id('journals')), // List of all journal IDs
-  chunkFilenames: v.array(v.string()), // List of all chunk filenames
+  journalIds: v.optional(v.array(v.id('journals'))), // List of all journal IDs
+  journalInfo: v.optional(v.array(journalInfo)), // List of all journal info
+  chunkFilenames: v.optional(v.array(v.string())), // List of all chunk filenames
+  chunkInfo: v.optional(v.array(chunkInfo)), // List of all chunk info
 });
 
 // Vector embeddings for semantic search

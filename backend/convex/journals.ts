@@ -2,6 +2,8 @@ import { internalQuery, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { createOperation } from "./operations";
+import { journalInfo } from "./schema";
 
 /**
  * Create a new journal entry
@@ -12,8 +14,22 @@ export const createJournal = internalMutation({
     markdown: v.string(),
     startTime: v.number(),
     endTime: v.number(),
+    references: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    // Check most recent metadata document
+    const currentMetadata = await ctx.db.query('metadata').order('desc').first();
+    if (currentMetadata === null) {
+      throw new Error("No metadata found");
+    }
+    // if (mostRecentMetadata && mostRecentMetadata.journalInfo) {
+    //   const existingReferenceLists = mostRecentMetadata.journalInfo.map(journal => journal.references);
+    //   // validation logic here
+    //   if (existingReferenceLists.includes(args.references)) {
+    //     throw new Error(`Journal "${args.title}" already exists`);
+    //   }
+    // }
+
     // Create the journal entry
     const journalId = await ctx.db.insert("journals", {
       title: args.title,
@@ -46,34 +62,26 @@ export const createJournal = internalMutation({
         embeddingId,
       });
     } catch (error) {
-      await ctx.db.insert("operations", {
+      await createOperation(ctx, {
         operation: "create",
         table: "markdownEmbeddings",
         success: false,
-        data: {
-          error: `Failed to create embedding: ${error}`,
-        },
+        message: `Failed to create embedding: ${error}`,
       });
     }
     
     // Update metadata to include this journal
-    const metadata = await ctx.db.query("metadata").first();
     
-    if (metadata) {
-      await ctx.db.patch(metadata._id, {
-        journalIds: [...metadata.journalIds, journalId],
-        endTime: Math.max(metadata.endTime, args.endTime),
-      });
-    } else {
-      // Create metadata if it doesn't exist
       await ctx.db.insert("metadata", {
-        startTime: args.startTime,
-        endTime: args.endTime,
-        syncedUntil: 0, // Haven't processed any journals yet
-        journalIds: [journalId],
-        chunkFilenames: [],
+        startTime: Math.min(currentMetadata.startTime, args.startTime),
+        journalInfo: [...(currentMetadata.journalInfo || []), {
+          convexId: journalId,
+          references: args.references,
+        }],
+        endTime: Math.max(currentMetadata.endTime, args.endTime),
+        syncedUntil: Date.now(),
+        chunkInfo: currentMetadata.chunkInfo,
       });
-    }
     
     return journalId;
   },
@@ -213,13 +221,14 @@ export const deleteJournal = internalMutation({
     }
     
     // Remove from metadata
-    const metadata = await ctx.db.query("metadata").first();
+    console.log("NOTE: Does not delete journal ID from metadata");
+    // const metadata = await ctx.db.query("metadata").first();
     
-    if (metadata) {
-      await ctx.db.patch(metadata._id, {
-        journalIds: metadata.journalIds.filter(id => id !== args.id),
-      });
-    }
+    // if (metadata) {
+    //   await ctx.db.patch(metadata._id, {
+    //     journalIds: metadata.journalIds.filter(id => id !== args.id),
+    //   });
+    // }
     
     // Delete the journal
     await ctx.db.delete(args.id);
