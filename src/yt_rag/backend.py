@@ -1,45 +1,15 @@
 import json
 import logging
 import os
-import time
 import argparse
-from typing import List, Dict, Any, TypedDict, Optional
+from typing import List, Dict, Any, Optional
 import requests
 
-from src.schemas import VectaraDocument, VectaraDocuments
+from src.schemas import ConvexSource, VectaraDoc
 from src.yt_rag.rag import get_vectara_corpus_info, fetch_document_by_id
 
 logger = logging.getLogger(__name__)
 
-# Type definitions
-class VectaraChunkPartMetadata(TypedDict, total=False):
-    breadcrumb: List[str]
-    is_title: bool
-    title: str
-    offset: int
-    lang: str
-    len: int
-    section: int
-    title_level: int
-
-class VectaraChunkPart(TypedDict):
-    text: str
-    context: str
-    custom_dimensions: Dict[str, Any]
-    metadata: VectaraChunkPartMetadata
-
-class VectaraChunkMetadata(TypedDict, total=False):
-    sidebar_position: str
-    title: str
-
-class VectaraChunk(TypedDict):
-    metadata: VectaraChunkMetadata
-    parts: List[VectaraChunkPart]
-
-class ConvexChunk(TypedDict):
-    filename: str
-    title: str
-    parts: List[Dict[str, Any]]
 
 # API handling functions
 def make_convex_api_call(endpoint: str, method: str, data: dict = None) -> Optional[Dict[str, Any]]:
@@ -65,25 +35,17 @@ def make_convex_api_call(endpoint: str, method: str, data: dict = None) -> Optio
         logger.error(f"API call failed: {str(e)}")
         return None
 
-def get_convex_chunk_info() -> Optional[List[Dict[str, Any]]]:
-    """Get latest chunk info from Convex"""
-    response = make_convex_api_call("chunks/info", "GET")
-    if not response or "chunkInfo" not in response:
-        logger.warning("No chunk info found in response")
-        return None
-    return response["chunkInfo"]
-
-def get_chunk_filenames_from_convex() -> List[str]:
-    """Get all vectara filenames from Convex"""
-    chunk_info = get_convex_chunk_info()
-    if not chunk_info:
-        logger.warning("No chunk info found in response")
+def get_source_filenames_from_convex() -> List[str]:
+    """Get filenames from source list in Convex metadata table."""
+    response = make_convex_api_call("metadata", "GET")
+    if not response or "sourceInfo" not in response:
+        logger.warning("No source info found in Convex metadata.")
         return []
-    return [chunk["filename"] for chunk in chunk_info]
+    return [source["filename"] for source in response["sourceInfo"]]
 
 def test_convex_connection() -> bool:
     """Test connection to Convex API"""
-    test_chunk = {
+    test_source = {
         "filename": "test.md",
         "title": "Test Document",
         "parts": [{
@@ -93,13 +55,13 @@ def test_convex_connection() -> bool:
         }]
     }
     
-    result = send_chunks_to_convex([test_chunk])
+    result = upload_sources_to_convex([test_source])
     return result["ok"]
 
 # Data conversion and handling
-def convert_to_convex_chunks(documents: List[VectaraChunk]) -> List[ConvexChunk]:
-    """Convert Vectara chunks to Convex format"""
-    convex_chunks = []
+def convert_to_convex_sources(documents: List[VectaraDoc]) -> List[ConvexSource]:
+    """Convert Vectara documents to Convex format"""
+    convex_sources = []
     
     for doc in documents:
         parts = []
@@ -116,29 +78,24 @@ def convert_to_convex_chunks(documents: List[VectaraChunk]) -> List[ConvexChunk]
                 "metadata": metadata
             })
             
-        convex_chunks.append({
+        convex_sources.append({
             "filename": doc["id"],
             "title": doc["metadata"].get("title", ""),
             "parts": parts
         })
         
-    return convex_chunks
+    return convex_sources
 
-def send_chunks_to_convex(
-    chunks: List[ConvexChunk], 
-    start_time: int = None, 
-    end_time: int = None
+def upload_sources_to_convex(
+    sources: List[ConvexSource], 
 ) -> Dict[str, Any]:
-    """Send chunks to Convex"""
-    current_time = int(time.time() * 1000)
+    """Send sources to Convex"""
     payload = {
-        "chunks": chunks,
-        "startTime": start_time or current_time,
-        "endTime": end_time or current_time
+        "sources": sources,
     }
     
     try:
-        response = make_convex_api_call("chunks", "POST", payload)
+        response = make_convex_api_call("sources", "POST", payload)
         if not response:
             return {"status": 0, "error": "No response", "ok": False}
         return {"status": 200, "data": response, "ok": True}
@@ -158,9 +115,9 @@ def save_document_to_file(document: dict, folder_path: str, overwrite: bool = Fa
         logger.debug(f"Saved document {document['id']}")
 
 # Main processing functions
-def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexChunk]:
+def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexSource]:
     """Process a batch of document IDs"""
-    processed_chunks = []
+    processed_sources = []
     
     for doc_id in doc_ids:
         try:
@@ -176,25 +133,25 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexC
                 logger.error(f"Document {doc_id} is too large (>1MB)")
                 continue
                 
-            processed_chunks.extend(convert_to_convex_chunks([document]))
+            processed_sources.extend(convert_to_convex_sources([document]))
             
         except Exception as e:
             logger.error(f"Failed to process {doc_id}: {str(e)}")
             
-    return processed_chunks
+    return processed_sources
 
 def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 1) -> bool:
     """Process documents from Vectara and send to Convex in batches"""
     try:
         # Get existing chunks from Convex
-        existing_filenames = get_chunk_filenames_from_convex()
+        existing_filenames = get_source_filenames_from_convex()
         
         # Fetch document IDs from Vectara
-        docs = VectaraDocuments(documents=get_vectara_corpus_info(limit=50)["documents"])
-        logger.debug(f"Retrieved {len(docs['documents'])} documents from Vectara")
+        docs: list[VectaraDoc] = get_vectara_corpus_info(limit=50)["documents"]
+        logger.debug(f"Retrieved {len(docs)} documents from Vectara")
         
         # Filter out existing documents
-        id_list = [doc["id"] for doc in docs["documents"] if doc["id"] not in existing_filenames]
+        id_list = [doc["id"] for doc in docs if doc["id"] not in existing_filenames]
         
         if not id_list:
             logger.info("No new documents to process")
@@ -205,30 +162,27 @@ def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 1) -> bool:
         # Setup document storage
         folder_path = os.path.join(os.path.dirname(__file__), "vectara_documents")
         
-        start_time = int(time.time() * 1000)
         all_success = True
         
         # Process documents in batches
         for batch_start in range(0, min(max_docs, len(id_list)), batch_size):
             batch_ids = id_list[batch_start:batch_start + batch_size]
-            processed_chunks = process_document_batch(batch_ids, folder_path)
+            processed_sources = process_document_batch(batch_ids, folder_path)
             
             # Send batch if we have any chunks
-            if not processed_chunks:
-                logger.warning(f"No valid chunks in batch {batch_start}-{batch_start + batch_size}")
+            if not processed_sources:
+                logger.warning(f"No valid sources in batch {batch_start}-{batch_start + batch_size}")
                 continue
                 
-            result = send_chunks_to_convex(
-                processed_chunks, 
-                start_time, 
-                int(time.time() * 1000)
+            result = upload_sources_to_convex(
+                processed_sources, 
             )
             
             if not result["ok"]:
                 logger.error(f"Failed to send batch {batch_start}-{batch_start + batch_size}")
                 all_success = False
             else:
-                logger.info(f"Sent batch with {len(processed_chunks)} chunks")
+                logger.info(f"Sent batch with {len(processed_sources)} sources")
         
         return all_success
         
