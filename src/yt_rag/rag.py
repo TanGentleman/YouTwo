@@ -6,15 +6,9 @@ import requests
 from pprint import pprint
 from src.schemas import UploadResult
 
+CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-if not logger.hasHandlers():
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 class VectaraAPIError(Exception):
     """Custom exception for Vectara API errors."""
@@ -34,6 +28,83 @@ def load_environment_variables():
     if not os.getenv("VECTARA_API_KEY"):
         raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
 
+
+class MetadataFilter:
+    """
+    A helper class to build metadata filter strings for Vectara queries.
+    (Placeholder implementation)
+    
+    Example:
+        filter_str = MetadataFilter().by_doc_id("my-doc-id").build()
+    """
+    def __init__(self):
+        self.filters = []
+
+    def by_doc_id(self, doc_id: str):
+        """Adds a filter for a specific document ID."""
+        self.filters.append(f"doc.id = '{doc_id}'")
+        return self
+    
+    def by_metadata_field(self, field: str, value: str):
+        """Adds a filter for a specific metadata field."""
+        self.filters.append(f"metadata.{field} = '{value}'")
+        return self
+
+    def build(self, operator: str = " and ") -> str:
+        """
+        Returns the constructed filter string.
+        
+        Args:
+            operator (str): The operator to join multiple filters (e.g., " and ", " or ").
+        """
+        return operator.join(self.filters)
+
+    def __str__(self):
+        return self.build()
+
+def make_vectara_api_call(method: str, endpoint: str, **kwargs) -> dict:
+    """
+    Makes a request to the Vectara API.
+
+    Args:
+        method (str): The HTTP method (e.g., 'GET', 'POST').
+        endpoint (str): The API endpoint (e.g., 'corpora/123/query').
+        **kwargs: Additional arguments to pass to requests.request() like 'json', 'params', 'files'.
+
+    Returns:
+        dict: The JSON response from the API.
+
+    Raises:
+        VectaraAPIError: If the API call fails.
+    """
+    base_url = "https://api.vectara.io/v2"
+    url = f"{base_url}/{endpoint}"
+
+    api_key = os.getenv("VECTARA_API_KEY")
+    if not api_key:
+        raise VectaraAPIError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
+
+    headers = kwargs.pop("headers", {})
+    headers.update({
+        "Accept": "application/json",
+        "x-api-key": api_key,
+    })
+    
+    if 'json' in kwargs:
+        headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.request(method, url, headers=headers, **kwargs)
+        response.raise_for_status()
+        if response.status_code == 204:
+            return {}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        raise VectaraAPIError(f"Error calling Vectara API endpoint {endpoint}: {e}") from e
+    except json.JSONDecodeError:
+        raise VectaraAPIError(f"Error decoding JSON response from Vectara API endpoint {endpoint}: {response.text}")
+    except Exception as e:
+        raise VectaraAPIError(f"An unexpected error occurred during Vectara API call: {e}") from e
 
 
 def is_allowed_filetype(suffix: str):
@@ -69,11 +140,11 @@ def upload_file_to_vectara(file_bytes: bytes, filename: str)  -> UploadResult:
         filename (str): The name of the file.
 
     Returns:
-        None
+        UploadResult: The upload result containing information about the uploaded file.
 
     Raises:
         VectaraAPIError: If there's an error during the Vectara API call.
-        IndexingError: For other processing errors
+        IndexingError: For other processing errors.
     """
     CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 
@@ -84,41 +155,24 @@ def upload_file_to_vectara(file_bytes: bytes, filename: str)  -> UploadResult:
     suffix = Path(filename).suffix
     # Ensure valid filename
     if not is_allowed_filetype(suffix):
-        raise IndexingError("Invalid filename. Please provide a filename ending with .pdf")
+        raise IndexingError(f"Invalid file type: {suffix}. Please provide a supported file type.")
 
-    # Replace with your actual corpus_key and API key
-    api_key = os.getenv("VECTARA_API_KEY")
-    if not api_key:
-        raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
-    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/upload_file"
-
-    headers = {
-        "Accept": "application/json",
-        "x-api-key": api_key,
-    }
-    files = {
-        'file': (filename, file_bytes)
-    }
-
+    endpoint = f"corpora/{CORPUS_KEY}/upload_file"
+    files = {'file': (filename, file_bytes)}
 
     try:
-        response = requests.post(url, headers=headers, files=files)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        response_json = response.json()
-        
+        response_json = make_vectara_api_call("POST", endpoint, files=files)
         result = process_upload_response(response_json)
         # You might want to store some information from the Vectara response
         # in your session object, e.g., document ID.
         return result
-    except requests.exceptions.RequestException as e:
-        raise VectaraAPIError(f"Error uploading to Vectara: {e}") from e
-    except Exception as e:
-        raise VectaraAPIError(f"An unexpected error occurred during PDF upload: {e}") from e
+    except VectaraAPIError as e:
+        raise VectaraAPIError(f"Error uploading file '{filename}' to Vectara: {e}") from e
 
 
 def process_upload_response(response_json: dict) -> UploadResult:
     """
-    Stores 
+    Processes the Vectara API response after a file upload.
 
     Args:
         response_json (dict): The Vectara API response.
@@ -143,31 +197,20 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
 
     Args:
         query (str): The user's query.
+        limit (int): The maximum number of search results to return.
+        filter_by_id (str, optional): An ID to filter documents. Defaults to None.
 
     Returns:
         tuple[list[str], str]: A tuple containing a list of retrieved text chunks and the llm generation.
     """
     CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
-    api_key = os.getenv("VECTARA_API_KEY")
-    if not api_key:
-        raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
-
-    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/query"
-    headers = {
-        "Accept": "application/json",
-        "x-api-key": api_key,
-        "Content-Type": "application/json"
-    }
-    metadata_filter = f"doc.id='{filter_by_id}'" if filter_by_id else None
+    
+    metadata_filter = MetadataFilter().by_doc_id(filter_by_id).build() if filter_by_id else None
+    
+    search = {"limit": limit}
     if metadata_filter:
-        search = {
-            "metadata_filter": metadata_filter,
-            "limit": limit,
-        }
-    else:
-        search = {
-            "limit": limit,
-        }
+        search["metadata_filter"] = metadata_filter
+
     payload = {
         "query": query,
         "search": search,
@@ -184,12 +227,11 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
         "intelligent_query_rewriting": False
     }
 
+    endpoint = f"corpora/{CORPUS_KEY}/query"
+
     try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        response_json = response.json()
+        response_json = make_vectara_api_call("POST", endpoint, json=payload)
         pprint(response_json)
-        # TODO: Parse Output here
         
         retrieved_chunks = []
 
@@ -210,21 +252,17 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
             print("No generated response found in the Vectara response.")
         return retrieved_chunks, generated_response
 
-    except requests.exceptions.RequestException as e:
+    except VectaraAPIError as e:
         raise VectaraAPIError(f"Error querying Vectara: {e}") from e
-    except Exception as e:
-        raise VectaraAPIError(f"An unexpected error occurred during Vectara query: {e}") from e
 
 def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_key: str = None) -> dict:
     """
     Fetches documents from a specific Vectara corpus.
     
     Args:
-        limit (int, optional): Maximum number of documents to return. Must be between 1 and 100. Defaults to 10.
+        limit (int, optional): Maximum number of documents to return. Must be between 1 and 100. Defaults to 50.
         metadata_filter (str, optional): Filter documents by metadata. Uses expression similar to query metadata filter.
         page_key (str, optional): Key used to retrieve the next page of documents after the limit has been reached.
-        request_timeout (int, optional): Time in seconds the API will attempt to complete the request before timing out.
-        request_timeout_millis (int, optional): Time in milliseconds the API will attempt to complete the request.
     
     Returns:
         dict: The response from the Vectara API containing the requested documents.
@@ -232,36 +270,17 @@ def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_k
     Raises:
         VectaraAPIError: If there's an error with the Vectara API request.
     """
-    import os
-    import requests
     CORPUS_KEY = "YouTwo"
-    request_timeout = 20
-    request_timeout_millis = 60000
-
 
     # Validate inputs
-    if limit is not None and (limit < 1 or limit > 100):
+    if not 1 <= limit <= 100:
         raise ValueError("Limit must be between 1 and 100")
     
     if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
         raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
     
-    # Prepare request
-    vectara_api_key = os.getenv("VECTARA_API_KEY")
+    endpoint = f"corpora/{CORPUS_KEY}/documents"
     
-    if not vectara_api_key:
-        raise VectaraAPIError("Vectara API key not found in environment variables")
-    
-    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/documents"
-    
-    headers = {
-        "Accept": "application/json",
-        "x-api-key": vectara_api_key
-    }
-    
-    payload = {}
-    
-    # Build query params
     params = {}
     if limit is not None:
         params["limit"] = limit
@@ -269,14 +288,11 @@ def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_k
         params["metadata_filter"] = metadata_filter
     if page_key is not None:
         params["page_key"] = page_key
+        
     try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
+        return make_vectara_api_call("GET", endpoint, params=params)
+    except VectaraAPIError as e:
         raise VectaraAPIError(f"Error fetching documents from Vectara corpus: {e}") from e
-    except Exception as e:
-        raise VectaraAPIError(f"An unexpected error occurred while fetching documents: {e}") from e
 
 def fetch_document_by_id(document_id: str) -> dict:
     """
@@ -291,8 +307,6 @@ def fetch_document_by_id(document_id: str) -> dict:
     Raises:
         VectaraAPIError: If there's an error with the Vectara API request.
     """
-    import os
-    import requests
     from urllib.parse import quote
     
     CORPUS_KEY = "YouTwo"
@@ -303,39 +317,22 @@ def fetch_document_by_id(document_id: str) -> dict:
     if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
         raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
     
-    # Prepare request
-    vectara_api_key = os.getenv("VECTARA_API_KEY")
-    
-    if not vectara_api_key:
-        raise VectaraAPIError("Vectara API key not found in environment variables")
-    
     # Ensure document_id is percent encoded
     encoded_document_id = quote(document_id)
     
-    url = f"https://api.vectara.io/v2/corpora/{CORPUS_KEY}/documents/{encoded_document_id}"
+    endpoint = f"corpora/{CORPUS_KEY}/documents/{encoded_document_id}"
     
-    headers = {
-        "Accept": "application/json",
-        "x-api-key": vectara_api_key
-    }
-    
-    payload = {}
-    
+    headers = {}
     # Set timeout parameters if needed
-    params = {}
     if request_timeout is not None:
         headers["Request-Timeout"] = str(request_timeout)
     if request_timeout_millis is not None:
         headers["Request-Timeout-Millis"] = str(request_timeout_millis)
         
     try:
-        response = requests.get(url, headers=headers, params=params, data=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
+        return make_vectara_api_call("GET", endpoint, headers=headers)
+    except VectaraAPIError as e:
         raise VectaraAPIError(f"Error fetching document from Vectara: {e}") from e
-    except Exception as e:
-        raise VectaraAPIError(f"An unexpected error occurred while fetching document: {e}") from e
 
 # This is still a placeholder
 def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str], summary: str) -> str:
