@@ -40,7 +40,8 @@ export const createChunks = internalMutation({
     const existingFilenames = new Set(currentMetadata.chunkInfo?.map(info => info.filename) ?? []);
     for (const chunk of args.chunks) {
       if (existingFilenames.has(chunk.filename)) {
-        throw new Error(`Chunk with filename ${chunk.filename} already exists`);
+        console.warn(`WARNING: Chunk with filename ${chunk.filename} already exists`);
+        continue;
       }
       existingFilenames.add(chunk.filename);
       // Insert the chunk document
@@ -49,6 +50,9 @@ export const createChunks = internalMutation({
         id,
         filename: chunk.filename
       });
+    }
+    if (createdChunkIds.length === 0) {
+      return [];
     }
     const updatedChunkInfo = [...(currentMetadata.chunkInfo || []), ...createdChunkIds.map(chunk => ({
       convexId: chunk.id,

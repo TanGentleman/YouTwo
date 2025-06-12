@@ -1,7 +1,6 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
-
 const http = httpRouter();
 
 /**
@@ -294,6 +293,11 @@ http.route({
       const result = await ctx.runMutation(internal.chunks.createChunks, { 
         chunks: body.chunks 
       });
+      if (result.length === 0) {
+        return new Response(JSON.stringify({ message: "No new vectara ids to create chunks for" }), {
+          headers: { "Content-Type": "application/json" }
+        });
+      }
       return new Response(JSON.stringify(result), {
         headers: { "Content-Type": "application/json" }
       });
@@ -305,6 +309,37 @@ http.route({
     }
   }),
 });
+
+/**
+ * Get vectara chunk info
+ */
+http.route({
+  path: "/chunks/info",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    try {
+      const metadata = await ctx.runMutation(internal.metadata.getSafeMetadata);
+      if (!metadata) {
+        return new Response(JSON.stringify({ error: "No metadata found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      return new Response(JSON.stringify({ chunkInfo: metadata.chunkInfo }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Failed to get latest metadata" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }),
+});
+
+
+
+
 
 // Export the HTTP router
 export default http; 

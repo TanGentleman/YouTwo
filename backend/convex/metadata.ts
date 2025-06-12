@@ -26,6 +26,13 @@ export const getOrCreateMetadata = async (ctx: MutationCtx) => {
     return currentMetadata;
   };
 
+  export const getSafeMetadata = internalMutation({
+    args: {},
+    handler: async (ctx) => {
+      return await getOrCreateMetadata(ctx);
+    },
+  });
+
 // === CREATE ===
 
 /**

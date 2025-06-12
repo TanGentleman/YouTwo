@@ -1,8 +1,8 @@
 type VectaraChunk = {
   title: string;
   metadata: {
-    sidebar_position: string;
-    title: string;
+    title?: string;
+    // Other fields
   };
   parts: Array<{
     text: string;
@@ -17,6 +17,7 @@ type VectaraChunk = {
       len?: number;
       section?: number;
       title_level?: number;
+      // Other fields
     };
   }>;
 };
