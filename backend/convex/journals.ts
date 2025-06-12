@@ -1,33 +1,23 @@
 import { internalQuery, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { createOperation } from "./operations";
-import { journalInfo } from "./schema";
+import { journalsDoc } from "./schema";
 import { getOrCreateMetadata } from "./metadata";
 
 /**
  * Create a new journal entry
  */
 export const createJournal = internalMutation({
-  args: {
-    title: v.string(),
-    markdown: v.string(),
-    startTime: v.number(),
-    endTime: v.number(),
-    references: v.array(v.string()),
-  },
+  args: journalsDoc,
   handler: async (ctx, args) => {
     // Check most recent metadata document
     const currentMetadata = await getOrCreateMetadata(ctx);
-    // if (mostRecentMetadata && mostRecentMetadata.journalInfo) {
-    //   const existingReferenceLists = mostRecentMetadata.journalInfo.map(journal => journal.references);
-    //   // validation logic here
-    //   if (existingReferenceLists.includes(args.references)) {
-    //     throw new Error(`Journal "${args.title}" already exists`);
-    //   }
-    // }
 
+    if (args.sources.length === 0) {
+      console.warn("WARNING: No sources provided to journal");
+    }
     // Create the journal entry
     const journalId = await ctx.db.insert("journals", {
       title: args.title,
@@ -35,6 +25,7 @@ export const createJournal = internalMutation({
       startTime: args.startTime,
       endTime: args.endTime,
       embeddingId: null, // Will be populated after embedding is generated
+      sources: args.sources,
     });
     
     // Log the operation
@@ -72,10 +63,7 @@ export const createJournal = internalMutation({
     
       await ctx.db.insert("metadata", {
         startTime: Math.min(currentMetadata.startTime, args.startTime),
-        journalInfo: [...(currentMetadata.journalInfo || []), {
-          convexId: journalId,
-          references: args.references,
-        }],
+        journalIds: [...(currentMetadata.journalIds || []), journalId],
         endTime: Math.max(currentMetadata.endTime, args.endTime),
         syncedUntil: Date.now(),
         sourceInfo: currentMetadata.sourceInfo,
@@ -207,7 +195,7 @@ export const deleteJournal = internalMutation({
   handler: async (ctx, args) => {
     const journal = await ctx.db.get(args.id);
     
-    if (!journal) {
+    if (journal === null) {
       throw new Error("Journal not found");
     }
     
@@ -218,15 +206,6 @@ export const deleteJournal = internalMutation({
     
     // Remove from metadata
     console.log("NOTE: Does not delete journal ID from metadata");
-    // const metadata = await ctx.db.query("metadata").first();
-    
-    // if (metadata) {
-    //   await ctx.db.patch(metadata._id, {
-    //     journalIds: metadata.journalIds.filter(id => id !== args.id),
-    //   });
-    // }
-    
-    // Delete the journal
     await ctx.db.delete(args.id);
     
     await createOperation(ctx, {
@@ -272,21 +251,20 @@ export const findSimilarJournals = internalQuery({
       // remove the current journal from the results
     
     // Get the corresponding journals
-    const journalIds = similarEmbeddings.map(emb => emb.journalId).filter(id => id !== args.journalId);
-    const similarJournals = await Promise.all(
-      journalIds
-        .map(id => ctx.db.get(id))
-    );
-    
-    return similarJournals
-      .filter((journal) => journal !== null) // Remove nulls
-      .map(journal => ({
-        id: journal._id,
-        title: journal.title,
-        markdown: journal.markdown,
-        startTime: journal.startTime,
-        endTime: journal.endTime,
-        date: new Date(journal.startTime).toLocaleDateString(),
-      }));
-  },
+    const journalIds: Id<"journals">[] = [];
+    for (const emb of similarEmbeddings) {
+      if (emb.journalId !== args.journalId) {
+        journalIds.push(emb.journalId);
+      }
+    }
+
+    // const similarJournals: Doc<"journals">[] = [];
+    // for (const emb of similarEmbeddings) {
+    //   const journal = await ctx.db.get(emb.journalId);
+    //   if (journal !== null) {
+    //     similarJournals.push(journal);
+    //   }
+    // }
+    return journalIds;
+  }
 }); 

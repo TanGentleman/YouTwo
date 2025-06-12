@@ -62,8 +62,7 @@ export const createSources = internalMutation({
       startTime: Math.min(currentMetadata.startTime || 0),
       sourceInfo: updatedSourceInfo,
       endTime: Math.max(currentMetadata.endTime || 0),
-      syncedUntil: Date.now(),
-      journalInfo: currentMetadata.journalInfo,
+      journalIds: currentMetadata.journalIds,
     });
 
     // Log the creation operation

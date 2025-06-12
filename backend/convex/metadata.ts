@@ -12,7 +12,7 @@ export const getOrCreateMetadata = async (ctx: MutationCtx) => {
     if (!currentMetadata) {
       const id = await ctx.db.insert('metadata', {
         sourceInfo: [],
-        journalInfo: [],
+        journalIds: [],
         startTime: 0,
         endTime: 0,
         syncedUntil: 0,
@@ -137,126 +137,6 @@ export const updateMetadata = internalMutation({
   },
 });
 
-// /**
-// //  * Adds journal IDs to the metadata document.
-// //  *
-// //  * @param id - The ID of the metadata document to update.
-// //  * @param journalIds - The journal IDs to add.
-// //  * @returns The ID of the updated document.
-// //  */
-// export const addJournalIds = internalMutation({
-//   args: {
-//     id: v.id('metadata'),
-//     journalIds: v.array(v.id('journals')),
-//   },
-//   handler: async (ctx, args) => {
-
-//     // Check if the document exists
-//     const existingMetadata = await ctx.db.get(args.id);
-//     if (!existingMetadata) {
-//       throw new Error(`Metadata with ID ${args.id} not found for update.`);
-//     }
-
-//     // Get current journal IDs and add new ones (avoiding duplicates)
-//     const currentJournalIds = existingMetadata.journalIds || [];
-//     const uniqueJournalIds = [...new Set([...currentJournalIds, ...journalIds])];
-
-//     // Update the document
-//     await ctx.db.patch(id, { journalIds: uniqueJournalIds });
-
-//     // Log the update operation
-//     await createOperation(ctx, {
-//       operation: 'update',
-//       table: 'metadata',
-//       success: true,
-//       message: `Added ${journalIds.length} journal IDs to metadata`,
-//     });
-
-//     return id;
-//   },
-// });
-
-// /**
-//  * Adds source filenames to the metadata document.
-//  *
-//  * @param id - The ID of the metadata document to update.
-//  * @param sourceFilenames - The source filenames to add.
-//  * @returns The ID of the updated document.
-//  */
-// export const addSourceFilenames = internalMutation({
-//   args: {
-//     id: v.id('metadata'),
-//     sourceFilenames: v.array(v.string()),
-//   },
-//   handler: async (ctx, args) => {
-//     const { id, sourceFilenames } = args;
-
-//     // Check if the document exists
-//     const existingMetadata = await ctx.db.get(id);
-//     if (!existingMetadata) {
-//       throw new Error(`Metadata with ID ${id} not found for update.`);
-//     }
-
-//     // Get current source filenames and add new ones (avoiding duplicates)
-//     const currentSourceFilenames = existingMetadata.sourceFilenames || [];
-//     const uniqueSourceFilenames = [...new Set([...currentSourceFilenames, ...sourceFilenames])];
-
-//     // Update the document
-//     await ctx.db.patch(id, { sourceFilenames: uniqueSourceFilenames });
-
-//     // Log the update operation
-//     await createOperation(ctx, {
-//       operation: 'update',
-//       table: 'metadata',
-//       success: true,
-//       message: `Added ${sourceFilenames.length} source filenames to metadata`,
-//     });
-
-//     return id;
-//   },
-// });
-
-// /**
-//  * Updates the time range in the metadata document.
-//  *
-//  * @param id - The ID of the metadata document to update.
-//  * @param startTime - The new start time.
-//  * @param endTime - The new end time.
-//  * @returns The ID of the updated document.
-//  */
-// export const updateTimeRange = internalMutation({
-//   args: {
-//     id: v.id('metadata'),
-//     startTime: v.optional(v.number()),
-//     endTime: v.optional(v.number()),
-//   },
-//   handler: async (ctx, args) => {
-//     const { id, startTime, endTime } = args;
-
-//     // Check if the document exists
-//     const existingMetadata = await ctx.db.get(id);
-//     if (!existingMetadata) {
-//       throw new Error(`Metadata with ID ${id} not found for update.`);
-//     }
-
-//     const updates: {startTime?: number, endTime?: number} = {};
-//     if (startTime !== undefined) updates.startTime = startTime;
-//     if (endTime !== undefined) updates.endTime = endTime;
-
-//     // Update the document
-//     await ctx.db.patch(id, updates);
-
-//     // Log the update operation
-//     await createOperation(ctx, {
-//       operation: 'update',
-//       table: 'metadata',
-//       success: true,
-//       message: `Updated time range in metadata`,
-//     });
-
-//     return id;
-//   },
-// });
 
 // === DELETE ===
 
