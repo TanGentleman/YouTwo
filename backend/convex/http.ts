@@ -272,17 +272,17 @@ http.route({
 });
 
 /**
- * Create chunks via HTTP API
+ * Create sources via HTTP API
  */
 
 http.route({
-  path: "/chunks",
+  path: "/sources",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
-    if (!body.chunks || !Array.isArray(body.chunks)) {
+    if (!body.sources || !Array.isArray(body.sources)) {
       return new Response(
-        JSON.stringify({ error: "Invalid request body, chunks array required" }),
+        JSON.stringify({ error: "Invalid request body, sources array required" }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" }
@@ -290,11 +290,11 @@ http.route({
       );
     }
     try {
-      const result = await ctx.runMutation(internal.chunks.createChunks, { 
-        chunks: body.chunks 
+      const result = await ctx.runMutation(internal.sources.createSources, { 
+        sources: body.sources 
       });
       if (result.length === 0) {
-        return new Response(JSON.stringify({ message: "No new vectara ids to create chunks for" }), {
+        return new Response(JSON.stringify({ message: "No new vectara ids to create sources for" }), {
           headers: { "Content-Type": "application/json" }
         });
       }
@@ -311,10 +311,10 @@ http.route({
 });
 
 /**
- * Get vectara chunk info
+ * Get vectara source info
  */
 http.route({
-  path: "/chunks/info",
+  path: "/sources/info",
   method: "GET",
   handler: httpAction(async (ctx) => {
     try {
@@ -325,7 +325,7 @@ http.route({
           headers: { "Content-Type": "application/json" }
         });
       }
-      return new Response(JSON.stringify({ chunkInfo: metadata.chunkInfo }), {
+      return new Response(JSON.stringify({ sourceInfo: metadata.sourceInfo }), {
         headers: { "Content-Type": "application/json" }
       });
     } catch (e) {

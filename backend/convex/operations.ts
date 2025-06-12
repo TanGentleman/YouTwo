@@ -7,7 +7,7 @@ import { operationsDoc } from "./schema";
 
 export async function createOperation(ctx: GenericMutationCtx<DataModel>, args: {
   operation: "distill" | "create" | "read" | "update" | "delete";
-  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata" | "chunks";
+  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata" | "sources";
   success: boolean;
   message?: string;
   error?: string;

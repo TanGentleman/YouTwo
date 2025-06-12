@@ -11,7 +11,7 @@ export const getOrCreateMetadata = async (ctx: MutationCtx) => {
     const currentMetadata = await ctx.db.query('metadata').order('desc').first();
     if (!currentMetadata) {
       const id = await ctx.db.insert('metadata', {
-        chunkInfo: [],
+        sourceInfo: [],
         journalInfo: [],
         startTime: 0,
         endTime: 0,
@@ -177,19 +177,19 @@ export const updateMetadata = internalMutation({
 // });
 
 // /**
-//  * Adds chunk filenames to the metadata document.
+//  * Adds source filenames to the metadata document.
 //  *
 //  * @param id - The ID of the metadata document to update.
-//  * @param chunkFilenames - The chunk filenames to add.
+//  * @param sourceFilenames - The source filenames to add.
 //  * @returns The ID of the updated document.
 //  */
-// export const addChunkFilenames = internalMutation({
+// export const addSourceFilenames = internalMutation({
 //   args: {
 //     id: v.id('metadata'),
-//     chunkFilenames: v.array(v.string()),
+//     sourceFilenames: v.array(v.string()),
 //   },
 //   handler: async (ctx, args) => {
-//     const { id, chunkFilenames } = args;
+//     const { id, sourceFilenames } = args;
 
 //     // Check if the document exists
 //     const existingMetadata = await ctx.db.get(id);
@@ -197,19 +197,19 @@ export const updateMetadata = internalMutation({
 //       throw new Error(`Metadata with ID ${id} not found for update.`);
 //     }
 
-//     // Get current chunk filenames and add new ones (avoiding duplicates)
-//     const currentChunkFilenames = existingMetadata.chunkFilenames || [];
-//     const uniqueChunkFilenames = [...new Set([...currentChunkFilenames, ...chunkFilenames])];
+//     // Get current source filenames and add new ones (avoiding duplicates)
+//     const currentSourceFilenames = existingMetadata.sourceFilenames || [];
+//     const uniqueSourceFilenames = [...new Set([...currentSourceFilenames, ...sourceFilenames])];
 
 //     // Update the document
-//     await ctx.db.patch(id, { chunkFilenames: uniqueChunkFilenames });
+//     await ctx.db.patch(id, { sourceFilenames: uniqueSourceFilenames });
 
 //     // Log the update operation
 //     await createOperation(ctx, {
 //       operation: 'update',
 //       table: 'metadata',
 //       success: true,
-//       message: `Added ${chunkFilenames.length} chunk filenames to metadata`,
+//       message: `Added ${sourceFilenames.length} source filenames to metadata`,
 //     });
 
 //     return id;

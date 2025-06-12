@@ -78,7 +78,7 @@ export const createJournal = internalMutation({
         }],
         endTime: Math.max(currentMetadata.endTime, args.endTime),
         syncedUntil: Date.now(),
-        chunkInfo: currentMetadata.chunkInfo,
+        sourceInfo: currentMetadata.sourceInfo,
       });
     
     return journalId;

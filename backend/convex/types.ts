@@ -1,4 +1,4 @@
-type VectaraChunk = {
+type VectaraSource = {
   title: string;
   metadata: {
     title?: string;
