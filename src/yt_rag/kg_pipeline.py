@@ -11,6 +11,8 @@ from langgraph.graph import StateGraph, END
 import requests
 import os
 
+from src.yt_rag.backend import make_convex_api_call
+
 # --- State Definition ---
 class KGState(TypedDict):
     topic: str
@@ -24,25 +26,10 @@ class KGState(TypedDict):
     current_agent: str  # used by LangGraph state router
 
 # --- Helper Functions ---
-import requests
 
 def fetch_knowledge_graph():
     """Fetch knowledge graph from Convex HTTP API"""
-    convex_url = os.getenv("CONVEX_URL")
-    if not convex_url:
-        raise ValueError("CONVEX_URL environment variable not set")
-    # Ensure no trailing slash
-    # If convex_url ends with .cloud or .cloud/, replace with .site
-    if convex_url.endswith(".cloud/"):
-        convex_url = convex_url[:-7] + ".site"
-    elif convex_url.endswith(".cloud"):
-        convex_url = convex_url[:-6] + ".site"
-    if not convex_url.endswith(".site"):
-       raise ValueError("CONVEX_URL must end with .site")
-    api_url = f"{convex_url}/graph"
-    response = requests.get(api_url)
-    response.raise_for_status()
-    return response.json()
+    return make_convex_api_call("graph", "GET")
 
 def prepare_graph_data(graph_data):
     """Convert Convex graph data to pipeline format"""
