@@ -1,4 +1,4 @@
-from typing import TypedDict, Dict, Any
+from typing import NotRequired, TypedDict, Dict, Any
 
 class StorageUsage(TypedDict):
     bytes_used: int
@@ -15,7 +15,7 @@ class VectaraDocument(TypedDict):
     metadata: Dict[str, Any]
     # tables: list[Dict[str, Any]]
     # parts: list[Dict[str, Any]] # NOTE: Only available when by list ID
-    # storage_usage: StorageUsage
+    storage_usage: NotRequired[StorageUsage]
     # extraction_usage: Dict[str, Any]
 
 

@@ -215,7 +215,7 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
     except Exception as e:
         raise VectaraAPIError(f"An unexpected error occurred during Vectara query: {e}") from e
 
-def fetch_documents_from_corpus(limit: int = 50, metadata_filter: str = None, page_key: str = None) -> dict:
+def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_key: str = None) -> dict:
     """
     Fetches documents from a specific Vectara corpus.
     
