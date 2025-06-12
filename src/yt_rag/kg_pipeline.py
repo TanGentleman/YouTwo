@@ -3,13 +3,13 @@
 
 # Must import matplotlib to visualize the graph
 # import matplotlib.pyplot as plt
+from datetime import datetime
+import json
 from langgraph.graph.state import CompiledStateGraph
 import networkx as nx
 from typing import TypedDict, List, Tuple, Dict, Any
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-import requests
-import os
 
 from src.yt_rag.backend import make_convex_api_call
 
@@ -27,9 +27,19 @@ class KGState(TypedDict):
 
 # --- Helper Functions ---
 
-def fetch_knowledge_graph():
+def fetch_knowledge_graph(from_frozen = True):
     """Fetch knowledge graph from Convex HTTP API"""
-    return make_convex_api_call("graph", "GET")
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    if from_frozen:
+        try:
+            with open(f"knowledge_graph-{date_str}.json", "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print("Knowledge graph file not found. Fetching from Convex...")
+    knowledge_graph = make_convex_api_call("graph", "GET")
+    with open(f"knowledge_graph-{date_str}.json", "w") as f:
+        json.dump(knowledge_graph, f)
+    return knowledge_graph
 
 def prepare_graph_data(graph_data):
     """Convert Convex graph data to pipeline format"""
@@ -48,6 +58,7 @@ def prepare_graph_data(graph_data):
 # --- Modified Agent Functions ---
 def data_gatherer(state: KGState) -> KGState:
     print("📚 Data Gatherer: Fetching knowledge graph from Convex")
+    # Replace in future with just the entities and relations relevant to the topic
     graph_data = fetch_knowledge_graph()
     entities, relations = prepare_graph_data(graph_data)
     
@@ -102,6 +113,7 @@ def visualize_graph(graph) -> None:
     except ImportError:
         print("matplotlib is not installed. Please install it using 'pip install matplotlib'")
         return
+    EXPERIMENTAL_GRAPH_VISUALIZATION = True
     
     plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(graph)
@@ -112,7 +124,10 @@ def visualize_graph(graph) -> None:
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
 
     plt.title("Knowledge Graph")
-    plt.tight_layout()
+    if EXPERIMENTAL_GRAPH_VISUALIZATION:
+        plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.2, hspace=0.2)
+    else:
+        plt.tight_layout()
     plt.show()
 
 def build_kg_graph() -> CompiledStateGraph:
@@ -150,6 +165,6 @@ def run_kg_pipeline(topic):
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
-    result = run_kg_pipeline("Machine Learning")
+    result = run_kg_pipeline("Friends")
     print(result)
     visualize_graph(result["graph"])
