@@ -65,7 +65,6 @@ export const createJournal = internalMutation({
         startTime: Math.min(currentMetadata.startTime, args.startTime),
         journalIds: [...(currentMetadata.journalIds || []), journalId],
         endTime: Math.max(currentMetadata.endTime, args.endTime),
-        syncedUntil: Date.now(),
         sourceInfo: currentMetadata.sourceInfo,
       });
     

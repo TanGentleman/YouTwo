@@ -1,22 +1,12 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
-
 const partsList = v.union(v.array(v.string()), v.array(v.number()));
+
 export const sourceInfo = v.object({
   filename: v.string(),
   convexId: v.id('sources'),
   parts: v.optional(partsList),
-});
-
-// Distilled journal entries - first layer of memory
-export const journalsDoc = v.object({
-  title: v.string(),
-  markdown: v.string(),
-  startTime: v.number(),
-  endTime: v.number(),
-  embeddingId: v.union(v.id('markdownEmbeddings'), v.null()),
-  sources: v.array(sourceInfo),
 });
 
 // Entities are primary nodes in the knowledge graph
@@ -36,7 +26,6 @@ export const relationDoc = v.object({
   journalIds: v.array(v.id('journals')), // List of all journal IDs
 });
 
-
 // Knowledge maps entities to their relationships
 export const knowledgeDoc = v.object({
   entity: v.id('entities'),
@@ -44,6 +33,37 @@ export const knowledgeDoc = v.object({
   updatedAt: v.number(), // Timestamp when entity was last updated
 });
 
+// Distilled journal entries - first layer of memory
+export const journalsDoc = v.object({
+  title: v.string(),
+  markdown: v.string(),
+  startTime: v.number(),
+  endTime: v.number(),
+  embeddingId: v.union(v.id('markdownEmbeddings'), v.null()),
+  sources: v.array(sourceInfo),
+});
+
+// Vector embeddings for semantic search
+export const markdownEmbeddingDoc = v.object({
+  markdown: v.string(), // The text content being embedded
+  embedding: v.optional(v.array(v.number())), // Vector representation
+  journalId: v.id('journals'), // Reference to the journal entry
+});
+
+// The offset value will be named to partIndex
+export const sourcesDoc = v.object({
+  filename: v.string(),
+  title: v.string(),
+  parts: partsList,
+});
+
+// Metadata stores system-wide information
+export const metadataDoc = v.object({
+  startTime: v.number(), // Earliest record timestamp
+  endTime: v.number(), // Latest record timestamp
+  journalIds: v.array(v.id('journals')), // List of all journal IDs
+  sourceInfo: v.array(sourceInfo), // List of all source info
+});
 
 // Operations log records system actions for debugging and monitoring
 export const operationsDoc = v.object({
@@ -68,29 +88,6 @@ export const operationsDoc = v.object({
     message: v.optional(v.string()),
     error: v.optional(v.string()),
   }),
-});
-
-// Metadata stores system-wide information
-export const metadataDoc = v.object({
-  startTime: v.number(), // Earliest record timestamp
-  endTime: v.number(), // Latest record timestamp
-  syncedUntil: v.number(), // Timestamp of last knowledge extraction
-  journalIds: v.array(v.id('journals')), // List of all journal IDs
-  sourceInfo: v.array(sourceInfo), // List of all source info
-});
-
-// Vector embeddings for semantic search
-export const markdownEmbeddingDoc = v.object({
-  markdown: v.string(), // The text content being embedded
-  embedding: v.optional(v.array(v.number())), // Vector representation
-  journalId: v.id('journals'), // Reference to the journal entry
-});
-
-// The offset value will be named to partIndex
-export const sourcesDoc = v.object({
-  filename: v.string(),
-  title: v.string(),
-  parts: partsList,
 });
 
 export default defineSchema({
