@@ -5,7 +5,6 @@ import time
 import argparse
 from typing import List, Dict, Any, TypedDict, Optional
 import requests
-from dotenv import load_dotenv
 
 from src.schemas import VectaraDocument, VectaraDocuments
 from src.yt_rag.rag import get_vectara_corpus_info, fetch_document_by_id
@@ -45,6 +44,10 @@ class ConvexChunk(TypedDict):
 # API handling functions
 def make_convex_api_call(endpoint: str, method: str, data: dict = None) -> Optional[Dict[str, Any]]:
     """Make request to Convex API"""
+    FORCE_LOAD_DOTENV = True
+    if FORCE_LOAD_DOTENV:
+        from dotenv import load_dotenv
+        load_dotenv()
     convex_url = os.getenv("CONVEX_URL")
     if not convex_url:
         raise ValueError("CONVEX_URL environment variable not set")
@@ -69,6 +72,14 @@ def get_convex_chunk_info() -> Optional[List[Dict[str, Any]]]:
         logger.warning("No chunk info found in response")
         return None
     return response["chunkInfo"]
+
+def get_chunk_filenames_from_convex() -> List[str]:
+    """Get all vectara filenames from Convex"""
+    chunk_info = get_convex_chunk_info()
+    if not chunk_info:
+        logger.warning("No chunk info found in response")
+        return []
+    return [chunk["filename"] for chunk in chunk_info]
 
 def test_convex_connection() -> bool:
     """Test connection to Convex API"""
@@ -174,22 +185,16 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexC
 
 def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 1) -> bool:
     """Process documents from Vectara and send to Convex in batches"""
-    load_dotenv()
-    
     try:
         # Get existing chunks from Convex
-        chunk_info = get_convex_chunk_info()
-        existing_chunks = []
-        if chunk_info:
-            existing_chunks = [chunk["filename"] for chunk in chunk_info]
-            logger.info(f"Found {len(existing_chunks)} existing chunks in Convex")
+        existing_filenames = get_chunk_filenames_from_convex()
         
         # Fetch document IDs from Vectara
         docs = VectaraDocuments(documents=get_vectara_corpus_info(limit=50)["documents"])
         logger.debug(f"Retrieved {len(docs['documents'])} documents from Vectara")
         
         # Filter out existing documents
-        id_list = [doc["id"] for doc in docs["documents"] if doc["id"] not in existing_chunks]
+        id_list = [doc["id"] for doc in docs["documents"] if doc["id"] not in existing_filenames]
         
         if not id_list:
             logger.info("No new documents to process")

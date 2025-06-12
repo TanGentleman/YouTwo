@@ -163,8 +163,6 @@ def run_kg_pipeline(topic):
     return result
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
     result = run_kg_pipeline("Friends")
     print(result)
     visualize_graph(result["graph"])

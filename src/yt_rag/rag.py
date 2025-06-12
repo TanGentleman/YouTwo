@@ -18,17 +18,6 @@ class IndexingError(Exception):
     """Custom exception for general Indexing errors."""
     pass
 
-def load_environment_variables():
-    """
-    Load environment variables from a .env file.
-    This function is useful for local development to avoid hardcoding sensitive information.
-    """
-    from dotenv import load_dotenv
-    load_dotenv()
-    if not os.getenv("VECTARA_API_KEY"):
-        raise IndexingError("Vectara API key not set. Please set the VECTARA_API_KEY environment variable.")
-
-
 class MetadataFilter:
     """
     A helper class to build metadata filter strings for Vectara queries.
@@ -77,6 +66,10 @@ def make_vectara_api_call(method: str, endpoint: str, **kwargs) -> dict:
     Raises:
         VectaraAPIError: If the API call fails.
     """
+    FORCE_LOAD_DOTENV = True
+    if FORCE_LOAD_DOTENV:
+        from dotenv import load_dotenv
+        load_dotenv()
     base_url = "https://api.vectara.io/v2"
     url = f"{base_url}/{endpoint}"
 
@@ -356,25 +349,8 @@ def generate_llm_response(chat_state: list[dict], retrieved_chunks: list[str], s
         context = "\n".join(retrieved_chunks)
         return f"Based on the retrieved information:\n{context}\n\nNo summary was generated, but here's the raw context."
 
-def test_file_upload():
-    # Change filepath
-    FILEPATH = "~/Downloads/Linux-Essentials-Training-Course-craw-updated.pdf"
-    from pathlib import Path
-    from dotenv import load_dotenv
-    load_dotenv()
-
-    try:
-        pdf_path = Path(FILEPATH).expanduser()
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-        upload_file_to_vectara(pdf_bytes, pdf_path.name)
-    except Exception as e:
-        raise IndexingError(f"Error occurred while uploading PDF: {e}")
-
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
     # chunks, summary = retrieve_chunks("What is the main idea of the document?")
     # print(chunks)
     # print(summary)
