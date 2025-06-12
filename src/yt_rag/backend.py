@@ -1,16 +1,18 @@
-from typing import List, Optional, Dict, Any, TypedDict
-from src.schemas import VectaraDocuments
-from src.yt_rag.rag import fetch_documents_from_corpus, fetch_document_by_id
-import requests
 import json
-import os
 import logging
+import os
 import time
 import argparse
+from typing import List, Dict, Any, TypedDict, Optional
+import requests
+from dotenv import load_dotenv
+
+from src.schemas import VectaraDocument, VectaraDocuments
+from src.yt_rag.rag import get_vectara_corpus_info, fetch_document_by_id
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
+# Type definitions
 class VectaraChunkPartMetadata(TypedDict, total=False):
     breadcrumb: List[str]
     is_title: bool
@@ -27,7 +29,7 @@ class VectaraChunkPart(TypedDict):
     custom_dimensions: Dict[str, Any]
     metadata: VectaraChunkPartMetadata
 
-class VectaraChunkMetadata(TypedDict):
+class VectaraChunkMetadata(TypedDict, total=False):
     sidebar_position: str
     title: str
 
@@ -40,268 +42,218 @@ class ConvexChunk(TypedDict):
     title: str
     parts: List[Dict[str, Any]]
 
-def convert_to_convex_chunks(documents: list[VectaraChunk]) -> list[ConvexChunk]:
-    """
-    Converts Vectara chunks to Convex format for database storage.
-    
-    Args:
-        documents: List of VectaraChunk objects
-        
-    Returns:
-        List of ConvexChunk objects formatted for Convex database
-    """
-    convex_chunks = []
-    for doc in documents:
-        # Create the base ConvexChunk
-        convex_chunk = {
-            "filename": doc["id"],
-            "title": doc["metadata"].get("title", ""),
-            "parts": []
-        }
-        
-        # Convert each part
-        for part in doc["parts"]:
-            # Initialize metadata with only non-None values
-            metadata = {}
-            if part["metadata"].get("breadcrumb") is not None:
-                metadata["breadcrumb"] = part["metadata"]["breadcrumb"]
-            if part["metadata"].get("is_title") is not None:
-                metadata["is_title"] = part["metadata"]["is_title"]
-            if part["metadata"].get("title") is not None:
-                metadata["title"] = part["metadata"]["title"]
-            if part["metadata"].get("offset") is not None:
-                metadata["offset"] = part["metadata"]["offset"]
-            
-            convex_part = {
-                "text": part["text"],
-                "context": part["context"],
-                "metadata": metadata
-            }
-            convex_chunk["parts"].append(convex_part)
-        
-        convex_chunks.append(convex_chunk)
-    
-    return convex_chunks
-
-def send_chunks_to_convex(chunks: list[ConvexChunk], start_time: int = None, end_time: int = None) -> Dict[str, Any]:
-    """
-    Sends the converted chunks to Convex via HTTP POST.
-    
-    Args:
-        chunks: List of ConvexChunk objects to send to Convex
-        start_time: Start time in milliseconds since epoch (default: current time)
-        end_time: End time in milliseconds since epoch (default: current time)
-        
-    Returns:
-        Dict containing the response status, data, and success flag
-        
-    Raises:
-        Exception: If there's an error sending chunks to Convex
-    """
+# API handling functions
+def make_convex_api_call(endpoint: str, method: str, data: dict = None) -> Optional[Dict[str, Any]]:
+    """Make request to Convex API"""
     convex_url = os.getenv("CONVEX_URL")
     if not convex_url:
         raise ValueError("CONVEX_URL environment variable not set")
     
-    # Replace .cloud or .cloud/ with .site in the Convex URL
-    if "convex.cloud" in convex_url:
-        convex_url = convex_url.replace("convex.cloud", "convex.site")
-    if not convex_url.endswith("/"):
-        convex_url += "/"
-        
-    endpoint = f"{convex_url}chunks"
+    url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}/{endpoint}"
     
-    # Set default timestamps if not provided
-    current_time = int(time.time() * 1000)  # Current time in milliseconds
-    if start_time is None:
-        start_time = current_time
-    if end_time is None:
-        end_time = current_time
-    
-    payload = {
-        "chunks": chunks,
-        "startTime": start_time,
-        "endTime": end_time
+    try:
+        response = requests.request(
+            method, url, json=data or {}, 
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logger.error(f"API call failed: {str(e)}")
+        return None
+
+def get_convex_chunk_info() -> Optional[List[Dict[str, Any]]]:
+    """Get latest chunk info from Convex"""
+    response = make_convex_api_call("chunks/info", "GET")
+    if not response or "chunkInfo" not in response:
+        logger.warning("No chunk info found in response")
+        return None
+    return response["chunkInfo"]
+
+def test_convex_connection() -> bool:
+    """Test connection to Convex API"""
+    test_chunk = {
+        "filename": "test.md",
+        "title": "Test Document",
+        "parts": [{
+            "text": "Test chunk",
+            "context": "Test context",
+            "metadata": {"breadcrumb": ["test"], "is_title": True, "title": "Test", "offset": 0}
+        }]
     }
     
-    headers = {"Content-Type": "application/json"}
-    
-    try:
-        logger.info(f"Sending request to {endpoint}")
-        logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
-        
-        response = requests.post(
-            endpoint,
-            headers=headers,
-            json=payload  # Use json parameter instead of data for automatic serialization
-        )
-        
-        try:
-            response_data = response.json()
-        except:
-            response_data = {"message": response.text}
-            
-        result = {
-            "status": response.status_code,
-            "data": response_data,
-            "ok": response.ok
-        }
-        
-        if not response.ok:
-            logger.error(f"Request failed with status {response.status_code}: {response_data}")
-        
-        return result
-    except Exception as e:
-        logger.error(f"Error sending chunks to Convex: {str(e)}")
-        return {
-            "status": 0,
-            "error": str(e),
-            "ok": False
-        }
+    result = send_chunks_to_convex([test_chunk])
+    return result["ok"]
 
-def main(max_docs: int = 10):
-    """
-    Main function to process documents and send chunks to Convex.
+# Data conversion and handling
+def convert_to_convex_chunks(documents: List[VectaraChunk]) -> List[ConvexChunk]:
+    """Convert Vectara chunks to Convex format"""
+    convex_chunks = []
     
-    Args:
-        max_docs: Maximum number of documents to process
+    for doc in documents:
+        parts = []
+        for part in doc["parts"]:
+            # Extract only the metadata fields we need
+            metadata = {
+                k: v for k, v in part["metadata"].items() 
+                if v is not None and k in {"breadcrumb", "is_title", "title", "offset"}
+            }
+            
+            parts.append({
+                "text": part["text"],
+                "context": part["context"],
+                "metadata": metadata
+            })
+            
+        convex_chunks.append({
+            "filename": doc["id"],
+            "title": doc["metadata"].get("title", ""),
+            "parts": parts
+        })
         
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    logger.info("Starting document processing")
+    return convex_chunks
+
+def send_chunks_to_convex(
+    chunks: List[ConvexChunk], 
+    start_time: int = None, 
+    end_time: int = None
+) -> Dict[str, Any]:
+    """Send chunks to Convex"""
+    current_time = int(time.time() * 1000)
+    payload = {
+        "chunks": chunks,
+        "startTime": start_time or current_time,
+        "endTime": end_time or current_time
+    }
     
     try:
-        # 1. Client gets vectara documents 
-        success = False
-        # Using a hardcoded list for testing
-        results = fetch_documents_from_corpus(limit = 50)
-        documents = VectaraDocuments(documents = results["documents"])
-        id_list = [document["id"] for document in documents["documents"]]
-        logger.info(f"Processing documents with IDs: {id_list}")
-        
-        processed_chunks = []
-        count = 0
-        
-        # Track processing time
-        start_time = int(time.time() * 1000)
-        
-        # 2. Client gets vectara document by id for each document
-        for doc_id in id_list:
-            try:
-                logger.info(f"Fetching document with ID: {doc_id}")
-                document = fetch_document_by_id(doc_id)
-                logger.info(f"Successfully fetched document: {doc_id}")
-                
-                logger.info(f"Converting document to Convex chunks")
-                convex_chunks = convert_to_convex_chunks([document])
-                logger.info(f"Generated {len(convex_chunks)} chunks")
-                
-                processed_chunks.extend(convex_chunks)
-                count += 1
-                
-                if count >= max_docs:
-                    logger.info(f"Reached maximum document limit: {max_docs}")
-                    break
-            except Exception as e:
-                logger.error(f"Error processing document {doc_id}: {str(e)}")
-        
-        # Get end time after processing
-        end_time = int(time.time() * 1000)
-        
-        # 3. Send the chunks to Convex if we have any
-        if processed_chunks:
-            logger.info(f"Sending {len(processed_chunks)} chunks to Convex")
-            try:
-                result = send_chunks_to_convex(
-                    chunks=processed_chunks,
-                    start_time=start_time,
-                    end_time=end_time
-                )
-                if result["ok"]:
-                    logger.info(f"Successfully sent chunks to Convex: {result['data']}")
-                    success = True
-                else:
-                    logger.error(f"Failed to send chunks to Convex: {result}")
-            except Exception as e:
-                logger.error(f"Exception sending chunks to Convex: {str(e)}")
-        else:
-            logger.warning("No chunks to send to Convex")
-            
-        if success:
-            logger.info("All chunks sent successfully to Convex")
-        else:
-            logger.error("Failed to send all chunks to Convex")
-        return success
+        response = make_convex_api_call("chunks", "POST", payload)
+        if not response:
+            return {"status": 0, "error": "No response", "ok": False}
+        return {"status": 200, "data": response, "ok": True}
     except Exception as e:
-        logger.error(f"Unexpected error in main function: {str(e)}")
-        return False
-        
-if __name__ == "__main__":
-    import sys
-    from dotenv import load_dotenv
+        logger.error(f"Send failed: {str(e)}")
+        return {"status": 0, "error": str(e), "ok": False}
+
+def save_document_to_file(document: dict, folder_path: str, overwrite: bool = False) -> None:
+    """Save a document as JSON file in specified folder"""
+    os.makedirs(folder_path, exist_ok=True)
+    filename = f"{document['id']}.json"
+    filepath = os.path.join(folder_path, filename)
     
-    # Parse command line arguments
+    if overwrite or not os.path.exists(filepath):
+        with open(filepath, 'w') as f:
+            json.dump(document, f, indent=2)
+        logger.debug(f"Saved document {document['id']}")
+
+# Main processing functions
+def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexChunk]:
+    """Process a batch of document IDs"""
+    processed_chunks = []
+    
+    for doc_id in doc_ids:
+        try:
+            document = fetch_document_by_id(doc_id)
+            if not document:
+                logger.error(f"Failed to fetch document {doc_id}")
+                continue
+                
+            save_document_to_file(document, folder_path)
+            
+            # Skip documents that are too large
+            if "storage_usage" in document and document["storage_usage"]["bytes_used"] > 1000000:
+                logger.error(f"Document {doc_id} is too large (>1MB)")
+                continue
+                
+            processed_chunks.extend(convert_to_convex_chunks([document]))
+            
+        except Exception as e:
+            logger.error(f"Failed to process {doc_id}: {str(e)}")
+            
+    return processed_chunks
+
+def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 1) -> bool:
+    """Process documents from Vectara and send to Convex in batches"""
+    load_dotenv()
+    
+    try:
+        # Get existing chunks from Convex
+        chunk_info = get_convex_chunk_info()
+        existing_chunks = []
+        if chunk_info:
+            existing_chunks = [chunk["filename"] for chunk in chunk_info]
+            logger.info(f"Found {len(existing_chunks)} existing chunks in Convex")
+        
+        # Fetch document IDs from Vectara
+        docs = VectaraDocuments(documents=get_vectara_corpus_info(limit=50)["documents"])
+        logger.debug(f"Retrieved {len(docs['documents'])} documents from Vectara")
+        
+        # Filter out existing documents
+        id_list = [doc["id"] for doc in docs["documents"] if doc["id"] not in existing_chunks]
+        
+        if not id_list:
+            logger.info("No new documents to process")
+            return True
+            
+        logger.info(f"Processing {min(max_docs, len(id_list))} of {len(id_list)} new documents")
+        
+        # Setup document storage
+        folder_path = os.path.join(os.path.dirname(__file__), "vectara_documents")
+        
+        start_time = int(time.time() * 1000)
+        all_success = True
+        
+        # Process documents in batches
+        for batch_start in range(0, min(max_docs, len(id_list)), batch_size):
+            batch_ids = id_list[batch_start:batch_start + batch_size]
+            processed_chunks = process_document_batch(batch_ids, folder_path)
+            
+            # Send batch if we have any chunks
+            if not processed_chunks:
+                logger.warning(f"No valid chunks in batch {batch_start}-{batch_start + batch_size}")
+                continue
+                
+            result = send_chunks_to_convex(
+                processed_chunks, 
+                start_time, 
+                int(time.time() * 1000)
+            )
+            
+            if not result["ok"]:
+                logger.error(f"Failed to send batch {batch_start}-{batch_start + batch_size}")
+                all_success = False
+            else:
+                logger.info(f"Sent batch with {len(processed_chunks)} chunks")
+        
+        return all_success
+        
+    except Exception as e:
+        logger.error(f"Sync failed: {str(e)}", exc_info=True)
+        return False
+
+def setup_logging(debug: bool = False) -> None:
+    """Configure logging based on debug flag"""
+    logging.basicConfig(
+        level=logging.DEBUG if debug else logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+def main_from_cli() -> bool:
+    """Process command line arguments and run the appropriate function"""
     parser = argparse.ArgumentParser(description="Process documents and send chunks to Convex")
     parser.add_argument("--max-docs", type=int, default=1, help="Maximum number of documents to process")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("--test-connection", action="store_true", help="Test Convex connection without processing documents")
+    parser.add_argument("--test-connection", action="store_true", help="Test connection to Convex")
     args = parser.parse_args()
     
-    # Load environment variables
-    load_dotenv()
+    setup_logging(args.debug)
     
-    # Configure logging
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logger.setLevel(log_level)
-    
-    # Configure console handler
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(log_level)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    
-    # Add the handler to the logger if it doesn't already have it
-    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-        logger.addHandler(handler)
-    
-    logger.info(f"Starting with args: {args}")
-    
-    # Test Convex connection if requested
     if args.test_connection:
-        try:
-            # Send an empty request to test connection
-            logger.info("Testing Convex connection...")
-            
-            # Create a minimal valid chunk for testing
-            test_chunk = {
-                "filename": "test.md",
-                "title": "Test Document",
-                "parts": [{
-                    "text": "This is a test chunk",
-                    "context": "Test context",
-                    "metadata": {
-                        "breadcrumb": ["test"],
-                        "is_title": True,
-                        "title": "Test",
-                        "offset": 0
-                    }
-                }]
-            }
-            
-            result = send_chunks_to_convex([test_chunk])
-            if result["ok"]:
-                logger.info("Connection to Convex successful!")
-                logger.info(f"Response: {result}")
-            else:
-                logger.error(f"Connection to Convex failed: {result}")
-        except Exception as e:
-            logger.error(f"Connection test failed: {str(e)}")
-        sys.exit(0)
+        success = test_convex_connection()
+        logger.info("Connection successful!" if success else "Connection failed")
+        return success
     
-    # Run the main function
-    try:
-        success = main(max_docs=args.max_docs)
-        sys.exit(0 if success else 1)
-    except Exception as e:
-        logger.critical(f"Critical error: {str(e)}", exc_info=args.debug)
-        sys.exit(1)
+    return sync_vectara_to_convex(args.max_docs)
+
+if __name__ == "__main__":
+    main_from_cli()
