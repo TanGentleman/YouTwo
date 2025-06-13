@@ -5,7 +5,7 @@
 import { internalQuery, internalMutation, MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { metadataDoc } from './schema';
-import { createOperation } from './operations';
+import { internalCreateOperations } from './operations';
 
 export const getOrCreateMetadata = async (ctx: MutationCtx) => {
     const currentMetadata = await ctx.db.query('metadata').order('desc').first();
@@ -54,12 +54,13 @@ export const createMetadata = internalMutation({
     // Insert the metadata document
     const id = await ctx.db.insert('metadata', args.metadata);
     // Log the creation operation
-    await createOperation(ctx, {
-      operation: 'create',
-      table: 'metadata',
+    const operation = {
+      operation: 'create' as const,
+      table: 'metadata' as const,
       success: true,
       message: `Created metadata document: ${id}`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
     return id;
   },
 });
@@ -125,12 +126,13 @@ export const updateMetadata = internalMutation({
     await ctx.db.patch(id, metadata);
 
     // Log the update operation
-    await createOperation(ctx, {
-      operation: 'update',
-      table: 'metadata',
+    const operation = {
+      operation: 'update' as const,
+      table: 'metadata' as const,
       success: true,
       message: `Updated metadata document: ${id}`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
 
     return id;
   },
@@ -163,12 +165,13 @@ export const deleteMetadata = internalMutation({
     await ctx.db.delete(id);
 
     // Log the deletion operation
-    await createOperation(ctx, {
-      operation: 'delete',
-      table: 'metadata',
+    const operation = {
+      operation: 'delete' as const,
+      table: 'metadata' as const,
       success: true,
       message: `Deleted metadata document`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
 
     return true;
   },

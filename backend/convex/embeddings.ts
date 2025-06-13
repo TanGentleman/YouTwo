@@ -1,7 +1,6 @@
 import { internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { createOperation } from "./operations";
+import { internalCreateOperations } from "./operations";
 
 /**
  * Process embeddings for a newly created markdown document
@@ -16,12 +15,13 @@ export const generateEmbedding = internalMutation({
     const doc = await ctx.db.get(args.markdownEmbeddingId);
     
     if (!doc) {
-      createOperation(ctx, {
-        operation: "update",
-        table: "markdownEmbeddings",
+      const operation = {
+        operation: "update" as const,
+        table: "markdownEmbeddings" as const,
         success: false,
         error: `Embedding document ${args.markdownEmbeddingId} not found`,
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
       return null;
     }
     
@@ -33,21 +33,23 @@ export const generateEmbedding = internalMutation({
       // Update the document with the embedding
       await ctx.db.patch(args.markdownEmbeddingId, { embedding: mockEmbedding });
       
-      await createOperation(ctx, {
-        operation: "update",
-        table: "markdownEmbeddings",
+      const operation = {
+        operation: "update" as const,
+        table: "markdownEmbeddings" as const,
         success: true,
         message: "Generated embedding for document",
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
       
       return args.markdownEmbeddingId;
     } catch (error) {
-      await createOperation(ctx, {
-        operation: "update",
-        table: "markdownEmbeddings",
+      const operation = {
+        operation: "update" as const,
+        table: "markdownEmbeddings" as const,
         success: false,
         error: `Failed to generate embedding: ${error}`,
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
       return null;
     }
   },

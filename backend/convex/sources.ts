@@ -7,7 +7,7 @@ import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 import { sourcesDoc } from './schema';
 import { paginationOptsValidator } from 'convex/server';
-import { createOperation } from './operations';
+import { internalCreateOperations } from './operations';
 import { getOrCreateMetadata } from './metadata';
 
 // Default values for querying
@@ -66,12 +66,13 @@ export const createSources = internalMutation({
     });
 
     // Log the creation operation
-    await createOperation(ctx, {
-      operation: 'create',
-      table: 'sources',
+    const operation = {
+      operation: 'create' as const,
+      table: 'sources' as const,
       success: true,
       message: `Created ${createdSourceIds.length} new sources`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
 
     return createdSourceIds;
   },
@@ -211,12 +212,13 @@ export const updateSources = internalMutation({
 
     // --- 3. Operation Logging ---
     if (updatedSources.length > 0) {
-      await createOperation(ctx, {
-        operation: 'update',
-        table: 'sources',
+      const operation = {
+        operation: 'update' as const,
+        table: 'sources' as const,
         success: true,
         message: `Updated ${updatedSources.length} sources`,
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
     }
 
     return updatedSources;
@@ -258,12 +260,13 @@ export const deleteSources = internalMutation({
 
     // Log the deletion operation
     if (deletedSources.length > 0) {
-      await createOperation(ctx, {
-        operation: 'delete',
-        table: 'sources',
+      const operation = {
+        operation: 'delete' as const,
+        table: 'sources' as const,
         success: true,
         message: `Deleted ${deletedSources.length} sources`,
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
     }
 
     // Return objects with id and filename of successfully deleted documents

@@ -1,6 +1,6 @@
 import { internalMutation } from './_generated/server';
 import { Doc } from './_generated/dataModel';
-import { createOperation } from './operations';
+import { internalCreateOperations } from './operations';
 
 /**
  * Patch to update all source documents:
@@ -33,12 +33,13 @@ export const updateSourcesSchema = internalMutation({
     }
     
     // Log the operation
-    await createOperation(ctx, {
-      operation: 'update',
-      table: 'sources',
+    const operation = {
+      operation: 'update' as const,
+      table: 'sources' as const,
       success: true,
       message: `Patched ${updatedCount} source documents: set type to "Vectara", calculated partsCount, removed parts`
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
     
     return {
       success: true,

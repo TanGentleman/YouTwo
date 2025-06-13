@@ -1,8 +1,7 @@
-import { internalQuery, internalMutation, query } from "./_generated/server";
+import { internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc, Id } from "./_generated/dataModel";
-import { internal } from "./_generated/api";
-import { createOperation } from "./operations";
+import { Id } from "./_generated/dataModel";
+import { internalCreateOperations } from "./operations";
 import { journalsDoc } from "./schema";
 import { getOrCreateMetadata } from "./metadata";
 
@@ -51,12 +50,13 @@ export const createJournal = internalMutation({
         embeddingId,
       });
     } catch (error) {
-      await createOperation(ctx, {
-        operation: "create",
-        table: "markdownEmbeddings",
+      const operation = {
+        operation: "create" as const,
+        table: "markdownEmbeddings" as const,
         success: false,
         message: `Failed to create embedding: ${error}`,
-      });
+      }
+      await internalCreateOperations(ctx, { operations: [operation] });
     }
     
     // Update metadata to include this journal
@@ -173,12 +173,13 @@ export const updateJournal = internalMutation({
       });
     }
     
-    await createOperation(ctx, {
-      operation: "update",
-      table: "journals",
+    const operation = {
+      operation: "update" as const,
+      table: "journals" as const,
       success: true,
       message: `Journal "${journal.title}" updated`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
     
     return args.id;
   },
@@ -207,12 +208,13 @@ export const deleteJournal = internalMutation({
     console.log("NOTE: Does not delete journal ID from metadata");
     await ctx.db.delete(args.id);
     
-    await createOperation(ctx, {
-      operation: "delete",
-      table: "journals",
+    const operation = {
+      operation: "delete" as const,
+      table: "journals" as const,
       success: true,
       message: `Journal "${journal.title}" deleted`,
-    });
+    }
+    await internalCreateOperations(ctx, { operations: [operation] });
     
     return args.id;
   },
