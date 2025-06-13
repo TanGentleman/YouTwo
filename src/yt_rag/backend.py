@@ -60,30 +60,25 @@ def test_convex_connection() -> bool:
 
 # Data conversion and handling
 def convert_to_convex_sources(documents: List[VectaraDoc]) -> List[ConvexSource]:
-    """Convert Vectara documents to Convex format"""
+    """
+    Convert Vectara documents to Convex sources format
+    """
     convex_sources = []
-    
+    part_index = 0
     for doc in documents:
         parts = []
+        title = doc.get("metadata", {}).get("title", "")
         for part in doc["parts"]:
-            # Extract only the metadata fields we need
-            metadata = {
-                k: v for k, v in part["metadata"].items() 
-                if v is not None and k in {"breadcrumb", "is_title", "title", "offset"}
-            }
-            
-            parts.append({
-                "text": part["text"],
-                "context": part["context"],
-                "metadata": metadata
-            })
-            
+            if "offset" in part:
+                parts.append(part["offset"])
+            else:
+                parts.append(part_index)
+                part_index += 1
         convex_sources.append({
             "filename": doc["id"],
-            "title": doc["metadata"].get("title", ""),
+            "title": title,
             "parts": parts
         })
-        
     return convex_sources
 
 def upload_sources_to_convex(
@@ -93,7 +88,6 @@ def upload_sources_to_convex(
     payload = {
         "sources": sources,
     }
-    
     try:
         response = make_convex_api_call("sources", "POST", payload)
         if not response:
@@ -140,7 +134,7 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexS
             
     return processed_sources
 
-def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 1) -> bool:
+def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 10) -> bool:
     """Process documents from Vectara and send to Convex in batches"""
     try:
         # Get existing chunks from Convex

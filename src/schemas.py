@@ -1,12 +1,12 @@
-from typing import TypedDict, Dict, Any, List
+from typing import TypedDict, Any
 
 class StorageUsage(TypedDict):
     bytes_used: int
     metadata_bytes_used: int
-    
+
 class UploadResult(TypedDict):
     id: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     storage_usage: StorageUsage
 
 class VectaraDocMetadata(TypedDict, total=False):
@@ -14,7 +14,7 @@ class VectaraDocMetadata(TypedDict, total=False):
     # Other goodies from Vectara
 
 class VectaraDocPartMetadata(TypedDict, total=False):
-    breadcrumb: List[str]
+    breadcrumb: list[str]
     is_title: bool
     title: str
     offset: int
@@ -27,15 +27,15 @@ class VectaraDocPartMetadata(TypedDict, total=False):
 class VectaraDocPart(TypedDict):
     text: str
     context: str
-    custom_dimensions: Dict[str, Any]
+    custom_dimensions: dict[str, Any]
     metadata: VectaraDocPartMetadata
 
 class VectaraDoc(TypedDict):
     id: str
     metadata: VectaraDocMetadata
-    parts: List[VectaraDocPart]
+    parts: list[VectaraDocPart]
 
 class ConvexSource(TypedDict):
     filename: str
     title: str
-    parts: List[Dict[str, Any]]
+    parts: list[str] | list[int]

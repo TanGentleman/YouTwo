@@ -15,7 +15,6 @@ export const getOrCreateMetadata = async (ctx: MutationCtx) => {
         journalIds: [],
         startTime: 0,
         endTime: 0,
-        syncedUntil: 0,
       });
       const newMetadata = await ctx.db.get(id);
       if (!newMetadata) {
