@@ -1,34 +1,88 @@
-import { internalMutation } from "./_generated/server";
+import { internalMutation, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { createOperation } from "./operations";
-import { Id } from "./_generated/dataModel";
+import { internalCreateOperations } from "./operations";
+import { Doc, Id } from "./_generated/dataModel";
+import { entityDoc } from "./schema";
 
 type EntityResult = {
   success: boolean;
-  id?: Id<"entities">;
   name: string;
+  id?: Id<"entities">;
   reason?: string;
   addedObservations?: string[];
   relationsRemoved?: number;
   observationsRemoved?: number;
 };
+
+export const internalCreateEntities = async (ctx: MutationCtx, args: {
+  entities: Omit<Doc<"entities">, "_id" | "_creationTime">[]
+}) => {
+  const results: EntityResult[] = [];
+  for (const entity of args.entities) {
+    const id = await ctx.db.insert("entities", entity);
+    results.push({
+      success: true,
+      id,
+      name: entity.name,
+    });
+  }
+  const operation = {
+    operation: "create" as const,
+    table: "entities" as const,
+    success: true,
+    message: `Created ${results.length} entities`,
+  }
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+}
+
+export const internalUpdateEntities = async (ctx: MutationCtx, args: {
+  entities: { id: Id<"entities">; updates: Partial<Doc<"entities">> }[]
+}) => {
+  const results: Id<"entities">[] = [];
+  for (const entity of args.entities) {
+    await ctx.db.patch(entity.id, entity.updates);
+    results.push(entity.id);
+  }
+  const operation = {
+    operation: "update" as const,
+    table: "entities" as const,
+    success: true,
+    message: `Updated ${results.length} entities`,
+  };
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+};
+
+export const internalDeleteEntities = async (ctx: MutationCtx, args: {
+  entityIds: Id<"entities">[]
+}) => {
+  const results: string[] = [];
+  for (const id of args.entityIds) {
+    await ctx.db.delete(id);
+    results.push(id);
+  }
+  const operation = {
+    operation: "delete" as const,
+    table: "entities" as const,
+    success: true,
+    message: `Deleted ${results.length} entities`,
+  }
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+}
+
+
 /**
  * Create multiple new entities in the knowledge graph
  */
 export const createEntities = internalMutation({
   args: {
-    entities: v.array(
-      v.object({
-        name: v.string(),
-        entityType: v.string(),
-        observations: v.array(v.string()),
-        journalIds: v.array(v.id("journals")),
-      })
-    ),
+    entities: v.array(entityDoc),
   },
   handler: async (ctx, args): Promise<EntityResult[]> => {
+    const newEntities: Omit<Doc<"entities">, "_id" | "_creationTime">[] = [];
     const results: EntityResult[] = [];
-    
     for (const entity of args.entities) {
       // Check if entity with this name already exists
       const existingEntity = await ctx.db
@@ -38,31 +92,21 @@ export const createEntities = internalMutation({
       
       if (!existingEntity) {
         // Create new entity
-        const id = await ctx.db.insert("entities", {
-          name: entity.name,
-          entityType: entity.entityType,
-          observations: entity.observations,
-          updatedAt: Date.now(),
-          journalIds: entity.journalIds,
-        });
-        
-        results.push({
-          success: true,
-          id,
-          name: entity.name,
-        });
-      } 
-      // Note: In the future, allow same name if different entity types
-      else {
+        newEntities.push(entity);
+      } else {
+        // Note: In the future, allow same name if different entity types
         results.push({
           success: false,
           name: entity.name,
-          reason: "Entity with this name already exists",
+          reason: `Entity with name ${entity.name} already exists: (${existingEntity._id})`,
         });
       }
     }
-    
-    return results;
+    if (newEntities.length === 0) {
+      return results;
+    }
+    const newEntityResults = await internalCreateEntities(ctx, { entities: newEntities });
+    return [...results, ...newEntityResults];
   },
 });
 
