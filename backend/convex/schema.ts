@@ -1,12 +1,11 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
-const partsList = v.union(v.array(v.string()), v.array(v.number()));
-
 export const sourceInfo = v.object({
   filename: v.string(),
   convexId: v.id('sources'),
-  parts: v.optional(partsList),
+  // Optionally, either a list of strings or a list of numbers
+  parts: v.optional(v.union(v.array(v.string()), v.array(v.number()))),
 });
 
 // Entities are primary nodes in the knowledge graph
@@ -53,8 +52,10 @@ export const markdownEmbeddingDoc = v.object({
 // The offset value will be named to partIndex
 export const sourcesDoc = v.object({
   filename: v.string(),
+  type: v.optional(v.string()),
   title: v.string(),
-  parts: partsList,
+  partsCount: v.optional(v.number()),
+  parts: v.optional(v.union(v.array(v.string()), v.array(v.number()))),
 });
 
 // Metadata stores system-wide information
