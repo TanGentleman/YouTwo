@@ -1,6 +1,5 @@
 from smolagents import tool
-from src.schemas import VectaraDocuments
-from src.yt_rag.rag import get_vectara_corpus_info, retrieve_chunks
+from src.yt_rag.rag import get_filenames_from_vectara, retrieve_chunks
 
 @tool
 def retrieve_tool(query: str, limit: int = 5, filter_by_id: str = None) -> dict[str, list[str] | str]:
@@ -21,17 +20,12 @@ def retrieve_tool(query: str, limit: int = 5, filter_by_id: str = None) -> dict[
     }
 
 @tool
-def inspect_database_tool() -> str:
+def inspect_database_tool() -> list[str]:
     """
-    Inspect the vector database
+    Inspect the vector database.
 
     Returns:
-        A list of documents
+        A list of all document IDs (filenames) in the database.
     """
-    results = get_vectara_corpus_info(limit = 50)
-    documents = VectaraDocuments(documents = results["documents"])
-    id_list = [document["id"] for document in documents["documents"]]
-    final_string = "The following documents IDs are in the vector database:\n"
-    for i, id in enumerate(id_list):
-        final_string += f"{i+1}. {id}\n"
-    return final_string
+    id_list = get_filenames_from_vectara()
+    return id_list
