@@ -52,10 +52,10 @@ export const markdownEmbeddingDoc = v.object({
 // The offset value will be named to partIndex
 export const sourcesDoc = v.object({
   filename: v.string(),
-  type: v.optional(v.string()),
+  type: v.string(),
   title: v.string(),
-  partsCount: v.optional(v.number()),
-  parts: v.optional(v.union(v.array(v.string()), v.array(v.number()))),
+  partsCount: v.number(),
+  parts: v.optional(v.array(v.string())),
 });
 
 // Metadata stores system-wide information
