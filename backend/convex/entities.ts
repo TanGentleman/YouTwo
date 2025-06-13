@@ -22,6 +22,7 @@ export const createEntities = internalMutation({
         name: v.string(),
         entityType: v.string(),
         observations: v.array(v.string()),
+        journalIds: v.array(v.id("journals")),
       })
     ),
   },
@@ -42,6 +43,7 @@ export const createEntities = internalMutation({
           entityType: entity.entityType,
           observations: entity.observations,
           updatedAt: Date.now(),
+          journalIds: entity.journalIds,
         });
         
         results.push({
@@ -49,7 +51,9 @@ export const createEntities = internalMutation({
           id,
           name: entity.name,
         });
-      } else {
+      } 
+      // Note: In the future, allow same name if different entity types
+      else {
         results.push({
           success: false,
           name: entity.name,

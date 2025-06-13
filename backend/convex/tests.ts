@@ -34,12 +34,14 @@ export const runTests = internalAction({
         {
           name: "Test_Person",
           entityType: "person",
-          observations: ["Test observation 1", "Test observation 2"]
+          observations: ["Test observation 1", "Test observation 2"],
+          journalIds: []
         },
         {
           name: "Test_Organization",
           entityType: "organization",
-          observations: ["Test company"]
+          observations: ["Test company"],
+          journalIds: []
         }
       ];
       
@@ -55,7 +57,8 @@ export const runTests = internalAction({
         {
           from: "Test_Person",
           to: "Test_Organization",
-          relationType: "works_at"
+          relationType: "works_at",
+          journalIds: []
         }
       ];
       
