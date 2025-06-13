@@ -48,11 +48,7 @@ def test_convex_connection() -> bool:
     test_source = {
         "filename": "test.md",
         "title": "Test Document",
-        "parts": [{
-            "text": "Test chunk",
-            "context": "Test context",
-            "metadata": {"breadcrumb": ["test"], "is_title": True, "title": "Test", "offset": 0}
-        }]
+        "partsCount": 1,
     }
     
     result = upload_sources_to_convex([test_source])
@@ -64,20 +60,13 @@ def convert_to_convex_sources(documents: List[VectaraDoc]) -> List[ConvexSource]
     Convert Vectara documents to Convex sources format
     """
     convex_sources = []
-    part_index = 0
     for doc in documents:
-        parts = []
         title = doc.get("metadata", {}).get("title", "")
-        for part in doc["parts"]:
-            if "offset" in part:
-                parts.append(part["offset"])
-            else:
-                parts.append(part_index)
-                part_index += 1
+        partsCount = len(doc["parts"])
         convex_sources.append({
             "filename": doc["id"],
             "title": title,
-            "parts": parts
+            "partsCount": partsCount,
         })
     return convex_sources
 

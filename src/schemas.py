@@ -1,4 +1,4 @@
-from typing import TypedDict, Any
+from typing import NotRequired, TypedDict, Any
 
 class StorageUsage(TypedDict):
     bytes_used: int
@@ -38,4 +38,5 @@ class VectaraDoc(TypedDict):
 class ConvexSource(TypedDict):
     filename: str
     title: str
-    parts: list[str] | list[int]
+    partsCount: int
+    parts: NotRequired[list[str]]
