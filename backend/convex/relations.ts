@@ -4,6 +4,7 @@ import { Doc, Id } from "./_generated/dataModel";
 import { internalCreateOperations } from "./operations";
 import { getEntityFromName } from "./entities";
 import { internalDeleteKnowledge } from "./knowledge";
+import { SimpleOp } from "./operations";
 
 type RelationResult = {
   success: boolean;
@@ -16,27 +17,92 @@ type RelationResult = {
 
 const KEEP_EMPTY_KNOWLEDGE = false;
 
-// Internal functions do not have side effects to knowledge table!
+export const createRelationsFromIds = internalMutation({
+  args: {
+    relations: v.array(v.object({
+      from: v.id("entities"),
+      to: v.id("entities"),
+      relationType: v.string(),
+      journalIds: v.optional(v.array(v.id("journals"))),
+    })),
+  },
+  handler: async (ctx, args) => {
+    // 1. Insert new relations in batch
+    const newRelations = await internalCreateRelations(ctx, {
+      relations: args.relations.map(rel => ({
+        from: rel.from,
+        to: rel.to,
+        relationType: rel.relationType,
+        journalIds: rel.journalIds,
+      })),
+    });
+
+    // 2. Update knowledge entries
+    await updateKnowledgeWithNewRelations(ctx, {
+      relations: newRelations,
+    });
+
+    return newRelations;
+  },
+});
+
+// Internal functions should have side effects to knowledge table!
 export const internalCreateRelations = async (ctx: MutationCtx,
   args: 
   {
     relations: Omit<Doc<"relations">, "_id" | "_creationTime">[]
   }) => {
+    const operations: SimpleOp[] = [];
     const results: Omit<Doc<"relations">, "_creationTime">[] = [];
+    const entityMap = new Map<Id<"entities">, Id<"relations">[]>();
     for (const relation of args.relations) {
       const id = await ctx.db.insert("relations", relation);
       results.push({
         _id: id,
         ...relation,
       });
+      // Update entityMap with new relation
+      if (!entityMap.has(relation.from)) {
+        entityMap.set(relation.from, []);
+      }
+      entityMap.get(relation.from)?.push(id);
+      if (!entityMap.has(relation.to)) {
+        entityMap.set(relation.to, []);
+      }
+      entityMap.get(relation.to)?.push(id);
     }
-    const operation = {
-      operation: "create" as const,
-      table: "relations" as const,
-      success: true,
-      message: `Created ${results.length} relations`,
+    
+    // Update knowledge with new relations
+    for (const [entityId, relationIds] of entityMap.entries()) {
+      const knowledge = await ctx.db.query("knowledge").withIndex("by_entity", q => q.eq("entity", entityId)).first();
+      if (knowledge === null) {
+        await ctx.db.insert("knowledge", {
+          entity: entityId,
+          relations: relationIds,
+          updatedAt: Date.now(),
+        });
+      }
+      else {
+        await ctx.db.patch(knowledge._id, {
+          relations: [...new Set([...knowledge.relations, ...relationIds])],
+        });
+      }
     }
-    await internalCreateOperations(ctx, { operations: [operation] });
+    if (entityMap.size > 0) {
+      operations.push({
+        operation: "create" as const,
+        table: "relations" as const,
+        success: true,
+        message: `Created ${results.length} relations`,
+      });
+      operations.push({
+        operation: "create" as const,
+        table: "knowledge" as const,
+        success: true,
+        message: `Updated ${entityMap.size} knowledge entries`,
+      });
+      await internalCreateOperations(ctx, { operations });
+    }
     return results;
 }
 
@@ -191,7 +257,7 @@ const constructValidRelations = async (ctx: MutationCtx, args: {
     from: string;
     to: string;
     relationType: string;
-    journalIds: Id<"journals">[];
+    journalIds?: Id<"journals">[];
   }[]
   }) => {
   const invalidResults: RelationResult[] = [];
@@ -263,6 +329,7 @@ const constructValidRelations = async (ctx: MutationCtx, args: {
       relationsToCreate,
     }
   }
+
 /**
  * Create multiple new relations between entities
  */
@@ -273,7 +340,7 @@ export const createRelations = internalMutation({
         from: v.string(),
         to: v.string(),
         relationType: v.string(),
-        journalIds: v.array(v.id("journals")),
+        journalIds: v.optional(v.array(v.id("journals"))),
       })
     ),
   },
@@ -281,6 +348,7 @@ export const createRelations = internalMutation({
     const results: RelationResult[] = [];
     const { invalidResults, relationsToCreate } = await constructValidRelations(ctx, { relations: args.relations });
     if (invalidResults.length > 0) {
+      console.error("Invalid relations:\n", invalidResults);
       return invalidResults;
     }
     const relationPartials = await internalCreateRelations(ctx, { relations: relationsToCreate });
@@ -299,7 +367,7 @@ export const createRelations = internalMutation({
       });
     }
 
-    await updateKnowledgeWithNewRelations(ctx, { relations: relationPartials });
+    // await updateKnowledgeWithNewRelations(ctx, { relations: relationPartials });
     return results;
   },
 });
