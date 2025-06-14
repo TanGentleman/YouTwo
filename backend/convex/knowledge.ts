@@ -1,6 +1,62 @@
-import { internalQuery } from "./_generated/server";
+import { internalQuery, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { internalCreateOperations } from "./operations";
+
+
+export const internalCreateKnowledge = async (ctx: MutationCtx, args: {
+  knowledge: Omit<Doc<"knowledge">, "_id" | "_creationTime">[]
+}) => {
+  const results: Id<"knowledge">[] = [];
+  for (const knowledge of args.knowledge) {
+    const id = await ctx.db.insert("knowledge", knowledge);
+    results.push(id);
+  }
+  const operation = {
+    operation: "create" as const,
+    table: "knowledge" as const,
+    success: true,
+    message: `Created ${results.length} knowledge entries`,
+  };
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+};
+
+export const internalUpdateKnowledge = async (ctx: MutationCtx, args: {
+  knowledge: { id: Id<"knowledge">; updates: Partial<Doc<"knowledge">> }[]
+}) => {
+  const results: Id<"knowledge">[] = [];
+  for (const knowledge of args.knowledge) {
+    await ctx.db.patch(knowledge.id, knowledge.updates);  
+    results.push(knowledge.id);
+  }
+  const operation = {
+    operation: "update" as const,
+    table: "knowledge" as const,
+    success: true,
+    message: `Updated ${results.length} knowledge entries`,
+  };
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+};
+
+export const internalDeleteKnowledge = async (ctx: MutationCtx, args: {
+  ids: Id<"knowledge">[]
+}) => {
+  const results: Id<"knowledge">[] = [];
+  for (const id of args.ids) {
+    await ctx.db.delete(id);
+    results.push(id);
+  }
+  const operation = {
+    operation: "delete" as const,
+    table: "knowledge" as const,
+    success: true,
+    message: `Deleted ${results.length} knowledge entries`,
+  };
+  await internalCreateOperations(ctx, { operations: [operation] });
+  return results;
+};
 
 /**
  * Read the entire knowledge graph
