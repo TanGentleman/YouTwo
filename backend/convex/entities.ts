@@ -1,10 +1,9 @@
-import { internalMutation, MutationCtx, QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, MutationCtx, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { internalCreateOperations } from "./operations";
 import { Doc, Id } from "./_generated/dataModel";
 import { entityDoc } from "./schema";
-import { internalDeleteRelations } from "./relations";
-import { internalDeleteKnowledge } from "./knowledge";
+import { internal } from "./_generated/api";
 
 type EntityResult = {
   success: boolean;
@@ -21,6 +20,17 @@ export const getEntityFromName = async (ctx: QueryCtx | MutationCtx, name: strin
   .withIndex("by_name", (q) => q.eq("name", name))
   .first();
 }
+
+export const getBriefEntities = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return (await ctx.db.query("entities").collect()).map(entity => ({
+      _id: entity._id,
+      name: entity.name,
+      entityType: entity.entityType,
+    }));
+  },
+});
 
 export const internalCreateEntities = async (ctx: MutationCtx, args: {
   entities: Omit<Doc<"entities">, "_id" | "_creationTime">[]
@@ -180,45 +190,71 @@ export const deleteEntities = internalMutation({
   handler: async (ctx, args): Promise<EntityResult[]> => {
     const results: EntityResult[] = [];
     const entitiesToDelete: Id<"entities">[] = [];
-    const relationsToDeleteSet = new Set<Id<"relations">>();
-    const knowledgeToDelete: Id<"knowledge">[] = [];
+    const relationsToDelete: {
+      from: Id<"entities">;
+      to: Id<"entities">;
+      relationType: string;
+    }[] = [];
 
     for (const name of args.entityNames) {
       // Find the entity
       const entity = await getEntityFromName(ctx, name);
 
-      if (entity !== null) {
-        entitiesToDelete.push(entity._id);
-
-        // Delete all related knowledge entries
-        const knowledgeEntry = await ctx.db
-          .query("knowledge")
-          .withIndex("by_entity", (q) => q.eq("entity", entity._id))
-          .unique();
-
-        if (knowledgeEntry === null) {
-          continue;
-        }
-        // Add relations to set to avoid duplicates
-        knowledgeEntry.relations.forEach(relationId => relationsToDeleteSet.add(relationId));
-        knowledgeToDelete.push(knowledgeEntry._id);
-        results.push({
-          success: true,
-          name,
-          relationsRemoved: knowledgeEntry.relations.length,
-        });
-      } else {
-        // Entity doesn't exist, but operation is silent as per spec
+      if (entity === null) {
         results.push({
           success: false,
           name,
           reason: "Entity not found",
         });
+        continue;
       }
+      entitiesToDelete.push(entity._id);
+
+      const relationsToDeleteById = new Map<Id<"relations">, {
+        from: Id<"entities">;
+        to: Id<"entities">;
+        relationType: string;
+      }>();
+
+      // Delete all related relations
+      const toRelations = await ctx.db
+        .query("relations")
+        .withIndex("by_to", (q) => q.eq("to", entity._id))
+        .collect();
+
+      const fromRelations = await ctx.db
+        .query("relations")
+        .withIndex("by_from", (q) => q.eq("from", entity._id))
+        .collect();
+
+      toRelations.forEach(relation => {
+        if (!relationsToDeleteById.has(relation._id)) {
+          relationsToDeleteById.set(relation._id, {
+            from: relation.from,
+            to: relation.to,
+            relationType: relation.relationType,
+          });
+        }
+      });
+      fromRelations.forEach(relation => {
+        if (!relationsToDeleteById.has(relation._id)) {
+          relationsToDeleteById.set(relation._id, {
+            from: relation.from,
+            to: relation.to,
+            relationType: relation.relationType,
+          });
+        }
+      });
+      relationsToDelete.push(...Array.from(relationsToDeleteById.values()));
+      
+      results.push({
+        success: true,
+        name,
+        relationsRemoved: toRelations.length + fromRelations.length,
+      });
     }
 
-    await internalDeleteKnowledge(ctx, { ids: knowledgeToDelete });
-    await internalDeleteRelations(ctx, { ids: Array.from(relationsToDeleteSet) });
+    await ctx.runMutation(internal.relations.deleteRelationsById, { relations: relationsToDelete });
     await internalDeleteEntities(ctx, { ids: entitiesToDelete });
     return results;
   },

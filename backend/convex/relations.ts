@@ -2,8 +2,8 @@ import { internalMutation, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { internalCreateOperations } from "./operations";
-import { relationDoc } from "./schema";
 import { getEntityFromName } from "./entities";
+import { internalDeleteKnowledge } from "./knowledge";
 
 type RelationResult = {
   success: boolean;
@@ -13,6 +13,8 @@ type RelationResult = {
   reason?: string;
   relationId?: Id<"relations">;
 }
+
+const KEEP_EMPTY_KNOWLEDGE = false;
 
 // Internal functions do not have side effects to knowledge table!
 export const internalCreateRelations = async (ctx: MutationCtx,
@@ -302,8 +304,238 @@ export const createRelations = internalMutation({
   },
 });
 
+const constructValidRelationsToDelete = async (ctx: MutationCtx, args: { 
+  relations: {
+    from: string;
+    to: string;
+    relationType: string;
+  }[]
+  }) => {
+  const invalidResults: RelationResult[] = [];
+  // Map to track relations by ID for de-duplication
+  const relationsMap = new Map<string, Doc<"relations">>();
+
+  // 1. Collect unique entity names and fetch them all at once
+  const allNames = new Set<string>();
+  args.relations.forEach(rel => {
+    allNames.add(rel.from);
+    allNames.add(rel.to);
+  });
+
+  const entitiesByName = new Map();
+  for (const name of allNames) {
+    const entity = await getEntityFromName(ctx, name);
+    if (entity !== null) {
+      entitiesByName.set(name, entity);
+    }
+  }
+
+  // 2. Process each relation and separate valid from invalid
+  for (const rel of args.relations) {
+    const fromEntity = entitiesByName.get(rel.from);
+    const toEntity = entitiesByName.get(rel.to);
+    
+    // Skip if entities don't exist
+    if (!fromEntity || !toEntity) {
+      invalidResults.push({
+        success: false,
+        from: rel.from,
+        to: rel.to,
+        relationType: rel.relationType,
+        reason: !fromEntity 
+          ? `Source entity "${rel.from}" not found` 
+          : `Target entity "${rel.to}" not found`
+      });
+      continue;
+    }
+    
+    // Check if relation exists
+    const existing = await ctx.db
+      .query("relations")
+      .withIndex("by_from", q => q.eq("from", fromEntity._id))
+      .collect()
+      .then(rels => rels.find(r => r.to === toEntity._id && r.relationType === rel.relationType));
+    
+    if (existing === undefined) {
+      invalidResults.push({
+        success: false,
+        from: rel.from,
+        to: rel.to,
+        relationType: rel.relationType,
+        reason: `Relation ${rel.from} -> ${rel.to} (${rel.relationType}) not found`
+      });
+      console.log("Invalid relation: ", rel);
+      continue;
+    }
+    
+    // Add to valid relations to delete (de-duplicated)
+    const relationId = existing._id.toString();
+    if (!relationsMap.has(relationId)) {
+      relationsMap.set(relationId, existing);
+    }
+  }
+  
+  // Convert map values to array
+  return {
+    invalidResults,
+    relationsToDelete: Array.from(relationsMap.values()),
+  }
+}
+
+/**
+ * Constructs valid relations to delete based on entity IDs
+ */
+const constructValidRelationsToDeleteById = async (ctx: MutationCtx, args: { 
+  relations: {
+    from: Id<"entities">;
+    to: Id<"entities">;
+    relationType: string;
+  }[]
+}) => {
+  const invalidResults: RelationResult[] = [];
+  const relationsToDelete: Doc<"relations">[] = [];
+  // Map to track relations by ID for de-duplication
+  const relationsMap = new Map<string, Doc<"relations">>();
+
+  // Process each relation and check if it exists
+  for (const rel of args.relations) {
+    // Check if both entities exist
+    const fromEntity = await ctx.db.get(rel.from);
+    const toEntity = await ctx.db.get(rel.to);
+    
+    if (!fromEntity || !toEntity) {
+      invalidResults.push({
+        success: false,
+        from: fromEntity ? fromEntity.name : String(rel.from),
+        to: toEntity ? toEntity.name : String(rel.to),
+        relationType: rel.relationType,
+        reason: !fromEntity 
+          ? `Source entity ID "${rel.from}" not found` 
+          : `Target entity ID "${rel.to}" not found`
+      });
+      continue;
+    }
+    
+    // Check if relation exists
+    const existing = await ctx.db
+      .query("relations")
+      .withIndex("by_from", q => q.eq("from", rel.from))
+      .collect()
+      .then(rels => rels.find(r => r.to === rel.to && r.relationType === rel.relationType));
+    
+    if (existing === undefined) {
+      invalidResults.push({
+        success: false,
+        from: fromEntity.name,
+        to: toEntity.name,
+        relationType: rel.relationType,
+        reason: `Relation ${fromEntity.name} -> ${toEntity.name} (${rel.relationType}) not found`
+      });
+      continue;
+    }
+    
+    // Add to valid relations to delete (de-duplicated)
+    const relationId = existing._id.toString();
+    if (!relationsMap.has(relationId)) {
+      relationsMap.set(relationId, existing);
+    }
+  }
+  
+  return {
+    invalidResults,
+    relationsToDelete: Array.from(relationsMap.values()),
+  };
+};
+
+const updateKnowledgeWithDeletedRelations = async (ctx: MutationCtx, args: {
+  relations: Doc<"relations">[],
+}) => {
+  // De-duplicate relations by ID
+  const uniqueRelations = Array.from(
+    new Map(args.relations.map(rel => [rel._id.toString(), rel])).values()
+  );
+  
+  // Collect all entity IDs involved in the relations
+  const entityIds = new Set<Id<"entities">>();
+  uniqueRelations.forEach(relation => {
+    entityIds.add(relation.from);
+    entityIds.add(relation.to);
+  });
+  console.log("Relations to delete: ", uniqueRelations);
+  const relationIds = uniqueRelations.map(rel => rel._id);
+  console.log("Relation IDs to delete: ", relationIds);
+  
+  const knowledgeToUpdate: Array<{id: Id<"knowledge">, relations: Id<"relations">[], entityId: Id<"entities">}> = [];
+  const knowledgeToDelete: Id<"knowledge">[] = [];
+  
+  // Only fetch knowledge entries for affected entities
+  for (const entityId of entityIds) {
+    const knowledge = await ctx.db
+      .query("knowledge")
+      .withIndex("by_entity", (q) => q.eq("entity", entityId))
+      .first();
+      
+    if (!knowledge) continue;
+    
+    // Check if this knowledge entry contains any relations to delete
+    const updatedRelations = knowledge.relations.filter(
+      relId => !relationIds.includes(relId)
+    );
+    
+    // Log the before and after relation IDs to help diagnose issues
+    console.log(`Entity ${entityId} - Before filtering: `, knowledge.relations);
+    console.log(`Entity ${entityId} - After filtering: `, updatedRelations);
+    
+    // Skip if this knowledge entry isn't affected
+    if (updatedRelations.length === knowledge.relations.length) {
+      continue;
+    }
+    
+    // Handle empty knowledge
+    if (updatedRelations.length === 0 && !KEEP_EMPTY_KNOWLEDGE) {
+      knowledgeToDelete.push(knowledge._id);
+    } else {
+      knowledgeToUpdate.push({
+        id: knowledge._id,
+        relations: updatedRelations,
+        entityId: knowledge.entity
+      });
+    }
+  }
+  
+  // Update knowledge entries
+  if (knowledgeToUpdate.length > 0) {
+    // Update all knowledge entries
+    for (const k of knowledgeToUpdate) {
+      await ctx.db.patch(k.id, {
+        relations: k.relations,
+        updatedAt: Date.now()
+      });
+    }
+    
+    const operation = {
+      operation: "update" as const,
+      table: "knowledge" as const,
+      success: true,
+      message: `Updated ${knowledgeToUpdate.length} knowledge entries`,
+    };
+    await internalCreateOperations(ctx, { operations: [operation] });
+  }
+  
+  // Delete empty knowledge entries if needed
+  if (knowledgeToDelete.length > 0) {
+    await internalDeleteKnowledge(ctx, { ids: knowledgeToDelete });
+  }
+  
+  return { knowledgeToUpdate, knowledgeToDelete };
+}
+
 /**
  * Delete specific relations from the graph
+ * 
+ * @param relations - Array of relation objects with from, to, and relationType
+ * @param destroyEmptyKnowledge - Optional. If true, knowledge entries with no relations will be deleted
+ * @returns Array of results for each relation deletion request
  */
 export const deleteRelations = internalMutation({
   args: {
@@ -316,92 +548,101 @@ export const deleteRelations = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    // Collect all unique entity names
-    const allNamesSet = new Set<string>();
-    args.relations.forEach(rel => {
-      allNamesSet.add(rel.from);
-      allNamesSet.add(rel.to);
-    });
-    const allNames = Array.from(allNamesSet);
-    const allEntities: Doc<"entities">[] = [];
-    for (const name of allNames) {
-      const entity = await getEntityFromName(ctx, name);
-      if (entity !== null) {
-        allEntities.push(entity);
-      }
-      else {
-        console.warn(`Entity ${name} not found`);
-      }
+    const { invalidResults, relationsToDelete } = await constructValidRelationsToDelete(ctx, { relations: args.relations });
+    
+    if (invalidResults.length > 0) {
+      console.error("Invalid relations!!");
+      return invalidResults;
     }
+    
+    if (relationsToDelete.length === 0) {
+      return [];
+    }
+    
+    // Get relation IDs for deletion
+    const relationIds = Array.from(new Set(relationsToDelete.map(rel => rel._id)));
+    
+    // Update knowledge entries
+    await updateKnowledgeWithDeletedRelations(ctx, { 
+      relations: relationsToDelete, 
+    });
 
+    // Delete relations
+    console.log("Deleting relations: ", relationIds);
+    await internalDeleteRelations(ctx, { ids: relationIds });
+    
+    // Create success results
+    const results: RelationResult[] = [];
+    for (const rel of args.relations) {
+      results.push({
+        success: true,
+        from: rel.from,
+        to: rel.to,
+        relationType: rel.relationType,
+      });
+    }
+    
+    return results;
+  },
+}); 
 
-    // Process relations in parallel
-    const results = await Promise.all(
-      args.relations.map(async relation => {
-        const sourceEntity = allEntities.find(e => e.name === relation.from);
-        const targetEntity = allEntities.find(e => e.name === relation.to);
-
-        if (!sourceEntity || !targetEntity) {
-          return {
-            success: false,
-            from: relation.from,
-            to: relation.to,
-            relationType: relation.relationType,
-            reason: "One or both entities not found",
-          };
-        }
-
-        // Find the relation
-        const existingRelation = (await ctx.db
-          .query("relations")
-          .withIndex("by_from", q => q.eq("from", sourceEntity._id))
-          .collect())
-          .find(
-            (rel) => 
-              rel.to === targetEntity._id && 
-              rel.relationType === relation.relationType
-          );
-
-        if (!existingRelation) {
-          return {
-            success: false,
-            from: relation.from,
-            to: relation.to,
-            relationType: relation.relationType,
-            reason: "Relation not found",
-          };
-        }
-
-        // Remove the relation from knowledge entries
-        const knowledgeEntries = await ctx.db
-          .query("knowledge")
-          .withIndex("by_entity", q => q.eq("entity", sourceEntity._id))
-          .collect();
-
-        await Promise.all(
-          knowledgeEntries.map(async knowledge => {
-            const updatedRelations = knowledge.relations.filter(
-              relId => relId !== existingRelation._id
-            );
-            await ctx.db.patch(knowledge._id, {
-              relations: updatedRelations,
-              updatedAt: Date.now(),
-            });
-          })
-        );
-
-        // Delete the relation
-        await ctx.db.delete(existingRelation._id);
-
-        return {
-          success: true,
-          from: relation.from,
-          to: relation.to,
-          relationType: relation.relationType,
-        };
+/**
+ * Delete specific relations from the graph using entity IDs
+ * 
+ * @param relations - Array of relation objects with from, to as entity IDs, and relationType
+ * @param destroyEmptyKnowledge - Optional. If true, knowledge entries with no relations will be deleted
+ * @returns Array of results for each relation deletion request
+ */
+export const deleteRelationsById = internalMutation({
+  args: {
+    relations: v.array(
+      v.object({
+        from: v.id("entities"), // Source entity ID
+        to: v.id("entities"), // Target entity ID
+        relationType: v.string(), // Relationship type
       })
-    );
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { invalidResults, relationsToDelete } = await constructValidRelationsToDeleteById(ctx, { 
+      relations: args.relations 
+    });
+    
+    if (invalidResults.length > 0) {
+      console.error("Invalid relations by ID!!");
+      return invalidResults;
+    }
+    
+    if (relationsToDelete.length === 0) {
+      return [];
+    }
+    
+    // Get relation IDs for deletion
+    const relationIds = relationsToDelete.map(rel => rel._id);
+    
+    // Update knowledge entries
+    await updateKnowledgeWithDeletedRelations(ctx, { 
+      relations: relationsToDelete, 
+    });
 
+    // Delete relations
+    await internalDeleteRelations(ctx, { ids: relationIds });
+    
+    // Create success results
+    const results: RelationResult[] = [];
+    for (const rel of args.relations) {
+      // Get entity names for the result
+      const fromEntity = await ctx.db.get(rel.from);
+      const toEntity = await ctx.db.get(rel.to);
+      
+      results.push({
+        success: true,
+        from: fromEntity?.name || String(rel.from),
+        to: toEntity?.name || String(rel.to),
+        relationType: rel.relationType,
+      });
+    }
+    
     return results;
   },
 }); 
