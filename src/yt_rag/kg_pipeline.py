@@ -7,7 +7,8 @@ from datetime import datetime
 import json
 from langgraph.graph.state import CompiledStateGraph
 import networkx as nx
-from typing import TypedDict, List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any
+from typing_extensions import TypedDict
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 
@@ -24,6 +25,7 @@ class KGState(TypedDict):
     validation: Dict[str, Any]
     messages: List[Any]
     current_agent: str  # used by LangGraph state router
+    frozen: bool # for experimental graph storage
 
 # --- Helper Functions ---
 
@@ -59,7 +61,7 @@ def prepare_graph_data(graph_data):
 def data_gatherer(state: KGState) -> KGState:
     print("📚 Data Gatherer: Fetching knowledge graph from Convex")
     # Replace in future with just the entities and relations relevant to the topic
-    graph_data = fetch_knowledge_graph()
+    graph_data = fetch_knowledge_graph(state["frozen"])
     entities, relations = prepare_graph_data(graph_data)
     
     state["entities"] = entities
@@ -146,7 +148,7 @@ def build_kg_graph() -> CompiledStateGraph:
 
 
 # --- Pipeline Execution Hook ---
-def run_kg_pipeline(topic):
+def run_kg_pipeline(topic, frozen=True):
     initial_state = {
         "topic": topic,
         "raw_text": "",
@@ -156,13 +158,22 @@ def run_kg_pipeline(topic):
         "graph": None,
         "validation": {},
         "messages": [],
-        "current_agent": "data_gatherer"
+        "current_agent": "data_gatherer",
+        "frozen": frozen
     }
     graph = build_kg_graph()
     result = graph.invoke(initial_state)
     return result
 
-if __name__ == "__main__":
-    result = run_kg_pipeline("Friends")
+def main():
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--force":
+        result = run_kg_pipeline("Friends", frozen=False)
+    else:
+        result = run_kg_pipeline("Friends")
+        
     print(result)
     visualize_graph(result["graph"])
+
+if __name__ == "__main__":
+    main()
