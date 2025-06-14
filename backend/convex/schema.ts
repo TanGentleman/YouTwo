@@ -22,9 +22,10 @@ export const relationDoc = v.object({
   from: v.id('entities'), // Source entity ID
   to: v.id('entities'), // Target entity ID
   relationType: v.string(), // Relationship type in active voice (e.g., "works_at")
-  journalIds: v.array(v.id('journals')), // List of all journal IDs
+  journalIds: v.optional(v.array(v.id('journals'))), // List of all journal IDs
 });
 
+// Only one knowledge entry per entity
 // Knowledge maps entities to their relationships
 export const knowledgeDoc = v.object({
   entity: v.id('entities'),
