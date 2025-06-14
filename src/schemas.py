@@ -1,5 +1,4 @@
-from typing import TypedDict, Any
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict, Any
 
 class StorageUsage(TypedDict):
     bytes_used: int
@@ -56,3 +55,22 @@ class ConvexCreateRelation(TypedDict):
     updatedAt: NotRequired[int]
     journalIds: NotRequired[list[str]]
 
+class FunctionSpec(TypedDict):
+    args: dict
+    functionType: str
+    identifier: str
+    returns: dict
+    visibility: dict
+
+class EntityResult(TypedDict):
+    success: bool
+    name: str
+    reason: NotRequired[str]
+
+class BriefEntity(TypedDict):
+    name: str
+    entityType: str
+
+class InitResult(TypedDict):
+    deploymentSelector: str
+    url: str
