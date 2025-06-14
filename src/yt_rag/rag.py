@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import requests
 from pprint import pprint
-from src.schemas import UploadResult
+from src.schemas import UploadResult, VectaraDoc
 
 CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 
@@ -287,6 +287,15 @@ def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_k
     except VectaraAPIError as e:
         raise VectaraAPIError(f"Error fetching documents from Vectara corpus: {e}") from e
 
+def get_filenames_from_vectara(limit: int = 50) -> list[str]:
+    """
+    Retrieves the filenames of all documents in the Vectara corpus.
+    """
+    results = get_vectara_corpus_info(limit = limit)
+    documents = results["documents"]
+    id_list = [document["id"] for document in documents]
+    return id_list
+
 def fetch_document_by_id(document_id: str) -> dict:
     """
     Retrieves the content and metadata of a specific document by its ID.
@@ -354,8 +363,12 @@ if __name__ == "__main__":
     # chunks, summary = retrieve_chunks("What is the main idea of the document?")
     # print(chunks)
     # print(summary)
-    docs = fetch_document_by_id('intro.md')
-    pprint(docs)
+    # docs = fetch_document_by_id('intro.md')
+    # pprint(docs)
     # save to json
-    with open('intro.md.json', 'w') as f:
-        json.dump(docs, f)
+    # with open('intro.md.json', 'w') as f:
+    #     json.dump(docs, f)
+    FILENAME = "Kranti-README.md"
+    METADATA_FILTER = MetadataFilter().by_doc_id(FILENAME).build()
+    res = get_vectara_corpus_info(limit=1, metadata_filter=METADATA_FILTER)
+    pprint(res)
