@@ -1,10 +1,12 @@
 import json
 from pathlib import Path
 from pprint import pprint
+from typing import Optional
 from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.stdio import stdio_client
 from mcp.types import CallToolResult
-from src.convex_mcp.config import InitResult, CONVEX_PROJECT_DIR, ALLOWED_TOOLS
+from src.convex_mcp.config import ALLOWED_FUNCTIONS, CONVEX_PROJECT_DIR, ALLOWED_TOOLS
+from src.schemas import InitResult
 import asyncio
 
 from src.convex_mcp.utils import parse_status
@@ -50,11 +52,26 @@ async def run_convex_function(deployment_selector: str, function_name: str, args
             print(f"Error running function {function_name}: {e}")
             return None
 
-async def initialize_mcp(project_dir: str = CONVEX_PROJECT_DIR) -> InitResult | None:
+async def get_function_spec(deployment_info: InitResult) -> list[dict] | None:
+    async with stdio_client(server_params) as (read, write), \
+         ClientSession(read, write) as session:
+        try:
+            await session.initialize()
+            response_dict = await session.call_tool("functionSpec", {"deploymentSelector": deployment_info["deploymentSelector"]})
+            full_function_spec = json.loads(response_dict.content[0].text)
+            function_spec = []
+            for func in full_function_spec:
+                if func.get("identifier") in ALLOWED_FUNCTIONS:
+                    function_spec.append(func)
+            return function_spec
+        except Exception as e:
+            print(f"Error getting function specs: {e}")
+            return None
+
+async def initialize_mcp(project_dir: Optional[str] = None) -> InitResult | None:
+    if not project_dir:
+        project_dir = CONVEX_PROJECT_DIR
     print(f"Initializing MCP with project dir: {project_dir}")
-    if not check_convex_project(project_dir):
-        print("Invalid Convex project directory")
-        return
     async with stdio_client(server_params) as (read, write), \
          ClientSession(read, write) as session:
         try:
@@ -68,5 +85,7 @@ if __name__ == "__main__":
     deployment_info = asyncio.run(initialize_mcp())
     if deployment_info:
         list_tools()
+        function_spec = asyncio.run(get_function_spec(deployment_info))
+        print(function_spec)
     else:
         print("No deployment info found")
