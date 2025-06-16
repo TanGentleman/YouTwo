@@ -1,13 +1,13 @@
 import argparse
-import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
 
 import requests
 
-from youtwo.rag.rag import fetch_document_by_id, get_vectara_corpus_info
+from youtwo.rag.vectara_client import VectaraClient
 from youtwo.schemas import ConvexSource, VectaraDoc
+from youtwo.utils import save_dict_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -100,20 +100,6 @@ def upload_sources_to_convex(
         return {"status": 0, "error": str(e), "ok": False}
 
 
-def save_document_to_file(
-    document: dict, folder_path: str, overwrite: bool = False
-) -> None:
-    """Save a document as JSON file in specified folder"""
-    os.makedirs(folder_path, exist_ok=True)
-    filename = f"{document['id']}.json"
-    filepath = os.path.join(folder_path, filename)
-
-    if overwrite or not os.path.exists(filepath):
-        with open(filepath, "w") as f:
-            json.dump(document, f, indent=2)
-        logger.debug(f"Saved document {document['id']}")
-
-
 # Main processing functions
 def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexSource]:
     """Process a batch of document IDs"""
@@ -121,12 +107,14 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexS
 
     for doc_id in doc_ids:
         try:
-            document = fetch_document_by_id(doc_id)
+            client = VectaraClient()
+            document = client.fetch_document_by_id(doc_id)
             if not document:
                 logger.error(f"Failed to fetch document {doc_id}")
                 continue
-
-            save_document_to_file(document, folder_path)
+            
+            filepath = os.path.join(folder_path, f"{doc_id}.json")
+            save_dict_to_file(document, filepath)
 
             # Skip documents that are too large
             if (
@@ -142,64 +130,6 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexS
             logger.error(f"Failed to process {doc_id}: {str(e)}")
 
     return processed_sources
-
-
-def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 10) -> bool:
-    """Process documents from Vectara and send to Convex in batches"""
-    try:
-        # Get existing chunks from Convex
-        existing_filenames = get_source_filenames_from_convex()
-
-        # Fetch document IDs from Vectara
-        docs: list[VectaraDoc] = get_vectara_corpus_info(limit=50)["documents"]
-        logger.debug(f"Retrieved {len(docs)} documents from Vectara")
-
-        # Filter out existing documents
-        id_list = [doc["id"] for doc in docs if doc["id"] not in existing_filenames]
-
-        if not id_list:
-            logger.info("No new documents to process")
-            return True
-
-        logger.info(
-            f"Processing {min(max_docs, len(id_list))} of {len(id_list)} new documents"
-        )
-
-        # Setup document storage
-        folder_path = os.path.join(os.path.dirname(__file__), "vectara_documents")
-
-        all_success = True
-
-        # Process documents in batches
-        for batch_start in range(0, min(max_docs, len(id_list)), batch_size):
-            batch_ids = id_list[batch_start : batch_start + batch_size]
-            processed_sources = process_document_batch(batch_ids, folder_path)
-
-            # Send batch if we have any chunks
-            if not processed_sources:
-                logger.warning(
-                    f"No valid sources in batch {batch_start}-{batch_start + batch_size}"
-                )
-                continue
-
-            result = upload_sources_to_convex(
-                processed_sources,
-            )
-
-            if not result["ok"]:
-                logger.error(
-                    f"Failed to send batch {batch_start}-{batch_start + batch_size}"
-                )
-                all_success = False
-            else:
-                logger.info(f"Sent batch with {len(processed_sources)} sources")
-
-        return all_success
-
-    except Exception as e:
-        logger.error(f"Sync failed: {str(e)}", exc_info=True)
-        return False
-
 
 def setup_logging(debug: bool = False) -> None:
     """Configure logging based on debug flag"""
