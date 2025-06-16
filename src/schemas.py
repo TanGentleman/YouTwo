@@ -71,6 +71,11 @@ class BriefEntity(TypedDict):
     name: str
     entityType: str
 
+class BriefRelation(TypedDict):
+    fromEntity: str
+    toEntity: str
+    relationType: str
+
 class InitResult(TypedDict):
     deploymentSelector: str
     url: str
