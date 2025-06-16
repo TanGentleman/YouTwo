@@ -14,27 +14,30 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
 dependencies = [
-    smolagents==1.17.0
-    requests
-    python-dotenv
+    "mcp",
+    "smolagents",
+    "requests",
+    "python-dotenv",
 ]
 
 [project.optional-dependencies]
-agent = [
-    "langchain",
-    "openai"
-]
-gradio = [
+frontend = [
     "gradio",
-    "transformers"
 ]
-rag = [
-    "faiss-cpu",
-    "sentence-transformers"
+deployment = [
+    "modal",
 ]
-full = [
-    "youtwo[agent]",
-    "youtwo[gradio]",
-    "youtwo[rag]"
+graph = [
+    "langgraph",
+    "langchain_core", 
+    "matplotlib",
+    "networkx",
+]
+
+all = [
+    "youtwo[frontend]",
+    "youtwo[deployment]",
+    "youtwo[graph]"
 ]

@@ -1,0 +1,15 @@
+mcp
+smolagents
+requests
+python-dotenv
+
+# For frontend
+gradio
+# For deployment
+modal
+# For knowledge graph
+langgraph
+langchain_core
+matplotlib
+networkx
+

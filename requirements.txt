@@ -1,6 +1,5 @@
-gradio==5.33.0
-modal==1.0.2
-smolagents==1.17.0
+mcp
+smolagents
 requests
 python-dotenv
 
