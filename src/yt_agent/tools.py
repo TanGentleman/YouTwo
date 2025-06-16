@@ -1,4 +1,5 @@
 from smolagents import tool
+from src.convex_mcp.server import get_graph_data, initialize_mcp
 from src.yt_rag.rag import get_filenames_from_vectara, retrieve_chunks
 
 @tool
@@ -29,3 +30,33 @@ def inspect_database_tool() -> list[str]:
     """
     id_list = get_filenames_from_vectara()
     return id_list
+
+def ensure_convex_site_url() -> str:
+    from dotenv import load_dotenv
+    from os import getenv
+    load_dotenv()
+    direct_url = getenv("CONVEX_SITE_URL")
+    if not direct_url:
+        raise ValueError("CONVEX_SITE_URL must be set to view the graph")
+    return direct_url
+
+@tool
+def view_graph() -> list[dict]:
+    """
+    Get the graph data.
+
+    Returns:
+        A list of graph data.
+    """
+    import asyncio
+    # If instead using HTTP with a site url, use environment
+    WIP = False
+    if WIP:
+        direct_url = ensure_convex_site_url()
+        deployment_info = {"deploymentSelector": None, "url": direct_url}
+    else:
+        deployment_info = asyncio.run(initialize_mcp())
+    return asyncio.run(get_graph_data(deployment_info))
+
+if __name__ == "__main__":
+    print(view_graph())
