@@ -1,7 +1,7 @@
 from typing import Any, Optional, Dict
 from mcp.types import CallToolResult
 import json
-from youtwo.schemas import InitResult
+from src.schemas import InitResult
 import requests
 import os
 
