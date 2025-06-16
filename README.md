@@ -6,7 +6,8 @@ Our gradio app for MCP-powered memory.
 
 A full RAG pipeline using Vectara, with an optional persistent memory system using a knowledge graph, built with Convex backend. This system allows for storing information about entities, their relations, and observations across multiple interactions.
 
-# This app is deployed on the current link: <>
+# This app is deployed on the current link: <https://tangentleman--youtwo-gradio-gradio-app.modal.run>
+
 
 # Run this app locally
 ```bash
