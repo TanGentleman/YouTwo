@@ -7,3 +7,4 @@ __pycache__/
 backend/convex/_generated/
 node_modules/
 backend/package-lock.json
+*.json
