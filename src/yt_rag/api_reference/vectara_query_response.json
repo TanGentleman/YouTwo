@@ -1,0 +1,75 @@
+[
+    {
+        "type": "search_results",
+        "search_results": [
+            {
+                "text": "Published: 2024-11-18 PMID: 39555724 (https://pubmed.ncbi.nlm.nih.gov/39555724/) %START_SNIPPET%Abstract: Leukemia is highly heterogeneous, meaning that different types of leukemia require different\ntreatments and have different prognoses.%END_SNIPPET% Current clinical diagnostic and typing tests are complex and\ntime-consuming. In particular, all of these tests rely on bone marrow aspiration, which is invasive and leads\nto poor patient compliance, exacerbating treatment delays.",
+                "score": 0.7401612401008606,
+                "part_metadata": {
+                    "page": 9,
+                    "lang": "eng",
+                    "section": 44,
+                    "offset": 0,
+                    "len": 143
+                },
+                "document_metadata": {
+                    "CreationDate": 1731973908,
+                    "Keywords": "",
+                    "Producer": "ReportLab PDF Library - www.reportlab.com",
+                    "Author": "(anonymous)",
+                    "Title": "(anonymous)",
+                    "Creator": "(unspecified)",
+                    "ModDate": 1731973908,
+                    "Trapped": "/False",
+                    "Subject": "(unspecified)",
+                    "title": "(anonymous)"
+                },
+                "document_id": "leukemia-output.pdf"
+            },
+            {
+                "text": "Abstract: The transcription factor CCAAT enhancer binding protein alpha (C/EBPα) is a master regulator of\nmyelopoiesis. encodes a long (p42) and a truncated (p30) protein isoform from a single mRNA. %START_SNIPPET%Mutations\nthat abnormally enhance expression of p30 are associated with acute myelogenous leukemia (AML).%END_SNIPPET% We\nshow by mutational analysis that three highly conserved arginine residues in the p30 C/EBPα N-terminus,\npreviously found to be methylated, are involved in myeloid lineage commitment, progenitor proliferation,\nand differentiation. The conservative amino acid substitution with lysine that retains the amino acid side\nchain charge enhanced progenitor proliferation, while a non-conservative substitution with uncharged side\nchains (alanine, leucine) impaired proliferation and enhanced granulopoiesis.",
+                "score": 0.6981238722801208,
+                "part_metadata": {
+                    "page": 11,
+                    "lang": "eng",
+                    "section": 54,
+                    "offset": 199,
+                    "len": 105
+                },
+                "document_metadata": {
+                    "CreationDate": 1731973908,
+                    "Keywords": "",
+                    "Producer": "ReportLab PDF Library - www.reportlab.com",
+                    "Author": "(anonymous)",
+                    "Title": "(anonymous)",
+                    "Creator": "(unspecified)",
+                    "ModDate": 1731973908,
+                    "Trapped": "/False",
+                    "Subject": "(unspecified)",
+                    "title": "(anonymous)"
+                },
+                "document_id": "leukemia-output.pdf"
+            }
+        ],
+        "rewritten_queries": []
+    },
+    {
+        "type": "generation_chunk",
+        "generation_chunk": "The lates"
+    },
+    {
+        "type": "generation_chunk",
+        "generation_chunk": "t researc [...]"
+    },
+    {
+        "type": "generation_chunk",
+        "generation_chunk": "emia research."
+    },
+    {
+        "type": "generation_end"
+    },
+    {
+        "type": "factual_consistency_score",
+        "factual_consistency_score": 0.42138672
+    }
+]

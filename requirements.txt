@@ -1,2 +1,14 @@
-gradio
-llama-index-tools-mcp
+gradio==5.33.0
+modal==1.0.2
+smolagents==1.17.0
+requests
+python-dotenv
+
+# For knowledge graph
+# langgraph
+# langchain_core
+# matplotlib
+# networkx
+
+# For vectara (Useful to get types)
+# vectara

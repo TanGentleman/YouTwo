@@ -1,9 +1,9 @@
 
-.venv/
-node_modules/
-build/
+.env
 __pycache__/
 .DS_Store
+.venv/
 .docusaurus/
-*.json
-
+backend/convex/_generated/
+node_modules/
+backend/package-lock.json
