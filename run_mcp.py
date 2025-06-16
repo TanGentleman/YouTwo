@@ -6,7 +6,7 @@ from src.convex_mcp.server import initialize_mcp, get_function_spec, run_convex_
 from mcp import types
 from mcp.server.fastmcp import FastMCP, Context
 
-from src.schemas import BriefEntity
+from src.schemas import BriefEntity, BriefRelation
 
 def get_function_description(function_name: str) -> str:
     if function_name in CONVEX_FUNCTION_MAP:
@@ -53,19 +53,24 @@ async def get_entities() -> list[BriefEntity]:
 
 @app.tool()
 async def create_entities(entities: list[BriefEntity]) -> Any:
-    try:
-        return await run_convex_function(MCP_KEY, "entities:createEntities", {"entities": entities})
-    except Exception as e:
-        print(f"Error creating entities: {e}")
-        return None
+    return await run_convex_function(MCP_KEY, "entities:createEntities", {"entities": entities})
 
 @app.tool()
-async def delete_entities(entity_names: list[str], ctx: Context) -> Any:
-    try:
-        return await run_convex_function(MCP_KEY, "entities:deleteEntities", {"entityNames": entity_names})
-    except Exception as e:
-        print(f"Error deleting entities: {e}")
-        return None
+async def delete_entities(entity_names: list[str]) -> Any:
+    return await run_convex_function(MCP_KEY, "entities:deleteEntities", {"entityNames": entity_names})
+
+@app.tool()
+async def create_relations(relations: list[BriefRelation]) -> Any:
+    return await run_convex_function(MCP_KEY, "relations:createRelations", {"relations": relations})
+
+@app.tool()
+async def delete_relations(relations: list[BriefRelation]) -> Any:
+    return await run_convex_function(MCP_KEY, "relations:deleteRelations", {"relations": relations})
+
+@app.tool()
+async def get_graph() -> Any:
+    return await run_convex_function(MCP_KEY, "knowledge:readGraph", {})
+
 
 # @app.call_tool()
 # async def call_tool(
