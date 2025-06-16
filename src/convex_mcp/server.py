@@ -9,7 +9,7 @@ from src.convex_mcp.config import ALLOWED_FUNCTIONS, CONVEX_PROJECT_DIR, ALLOWED
 from src.schemas import InitResult
 import asyncio
 
-from src.convex_mcp.utils import parse_status
+from src.convex_mcp.utils import async_convex_api_call, parse_convex_result, parse_status
 
 server_params = StdioServerParameters(
     command="npx",
@@ -42,12 +42,11 @@ async def run_convex_function(deployment_selector: str, function_name: str, args
          ClientSession(read, write) as session:
         try:
             await session.initialize()
-            result = await session.call_tool("run", {
+            return await session.call_tool("run", {
                 "deploymentSelector": deployment_selector,
                 "functionName": function_name,
                 "args": json.dumps(args)
             })
-            return result
         except Exception as e:
             print(f"Error running function {function_name}: {e}")
             return None
@@ -80,6 +79,24 @@ async def initialize_mcp(project_dir: Optional[str] = None) -> InitResult | None
             return deployment_info if deployment_info else print("No ownDev deployment found")
         except Exception as e:
             print(f"Error initializing MCP: {e}")
+
+async def get_graph_data(deployment_info: InitResult) -> list[dict] | None:
+    async with stdio_client(server_params) as (read, write), \
+         ClientSession(read, write) as session:
+        try:
+            await session.initialize()
+            # Check for deployment info
+            if not deployment_info["deploymentSelector"]:
+                WIP = True
+                knowledge_graph = await async_convex_api_call("graph", "GET", deployment_url=deployment_info["url"])
+                with open(Path(__file__).parent / "knowledge_graph-WIP.json", "w") as f:
+                    json.dump(knowledge_graph, f)
+                return knowledge_graph
+            res = await run_convex_function(deployment_info["deploymentSelector"], "knowledge:readGraph", {})
+            return parse_convex_result(res)
+        except Exception as e:
+            print(f"Error getting graph data: {e}")
+            return None
 
 if __name__ == "__main__":
     deployment_info = asyncio.run(initialize_mcp())
