@@ -1,6 +1,6 @@
 from smolagents import tool
 
-from youtwo.rag.rag import get_filenames_from_vectara, retrieve_chunks
+from youtwo.rag.vectara_client import VectaraClient
 from youtwo.server.server import get_graph_data, initialize_mcp
 
 
@@ -18,7 +18,8 @@ def retrieve_tool(
     Returns:
         A list of chunks, and a grounded summary
     """
-    chunks, vectara_summary = retrieve_chunks(query, limit, filter_by_id)
+    client = VectaraClient()
+    chunks, vectara_summary = client.retrieve_chunks(query, limit, filter_by_id)
     return {"chunks": chunks, "summary": vectara_summary}
 
 
@@ -30,15 +31,14 @@ def inspect_database_tool() -> list[str]:
     Returns:
         A list of all document IDs (filenames) in the database.
     """
-    id_list = get_filenames_from_vectara()
+    client = VectaraClient()
+    id_list = client.get_filenames()
     return id_list
 
 
 def ensure_convex_site_url() -> str:
     from os import getenv
-
     from dotenv import load_dotenv
-
     load_dotenv()
     direct_url = getenv("CONVEX_SITE_URL")
     if not direct_url:
@@ -57,8 +57,8 @@ def view_graph() -> list[dict]:
     import asyncio
 
     # If instead using HTTP with a site url, use environment
-    WIP = False
-    if WIP:
+    DIRECT_HTTP = True
+    if DIRECT_HTTP:
         direct_url = ensure_convex_site_url()
         deployment_info = {"deploymentSelector": None, "url": direct_url}
     else:

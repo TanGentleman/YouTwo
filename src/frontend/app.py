@@ -4,7 +4,7 @@ from pathlib import Path
 import gradio as gr
 
 from youtwo.agents.agent import agent
-from youtwo.rag.rag import is_allowed_filetype, retrieve_chunks, upload_file_to_vectara
+from youtwo.rag.vectara_client import VectaraClient, is_allowed_filetype
 
 # ---------------------------
 # Placeholder Backend Functions
@@ -33,7 +33,8 @@ def natural_language_handler(query: str) -> str:
     Returns:
         str: Simulated or generated action and result.
     """
-    chunks, response = retrieve_chunks(query, limit=5)
+    client = VectaraClient()
+    chunks, response = client.retrieve_chunks(query, limit=5)
     return f"*Retrieved {len(chunks)} chunks.*\n------\n{response}"
 
 
@@ -80,11 +81,12 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
     if not is_allowed_filetype(filepath.suffix):
         return f"Error: The uploaded filetype {filepath.suffix} is not supported."
 
+    client = VectaraClient()
     # Obtain the bytes
     with open(filepath, "rb") as file:
         file_contents = file.read()
 
-    upload_result = upload_file_to_vectara(file_contents, filepath.name)
+    upload_result = client.upload_file(file_contents, filepath.name)
 
     return f"Uploaded document: {upload_result['id']}"
 
