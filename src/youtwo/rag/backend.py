@@ -23,9 +23,11 @@ def make_convex_api_call(endpoint: str, method: str, data: dict = None, url: str
             raise ValueError("CONVEX_URL environment variable not set")
     else:
         convex_url = url
-    convex_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}/{endpoint}"
+    convex_url = f"{convex_url.replace('convex.cloud', 'convex.site')}"
     try:
+        print("convex_url: ", convex_url)
         assert convex_url.endswith(".site"), "Convex HTTP api base must end with .site"
+        url = f"{convex_url}/{endpoint}"
         response = requests.request(
             method, url, json=data or {}, 
             headers={"Content-Type": "application/json"}
@@ -50,6 +52,7 @@ def test_convex_connection() -> bool:
         "filename": "test.md",
         "title": "Test Document",
         "partsCount": 1,
+        "type": "Test",
     }
     
     result = upload_sources_to_convex([test_source])
@@ -67,6 +70,7 @@ def convert_to_convex_sources(documents: List[VectaraDoc]) -> List[ConvexSource]
         convex_sources.append({
             "filename": doc["id"],
             "title": title,
+            "type": "Vectara",
             "partsCount": partsCount,
         })
     return convex_sources
