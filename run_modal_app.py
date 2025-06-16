@@ -12,7 +12,7 @@ rag_dir = src_dir / "yt_rag"
 web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
     "python-dotenv",
     "fastapi[standard]==0.115.4",
-    "gradio[mcp]==5.33.0",
+    "gradio[mcp]==5.33.1",
     "requests",
     "smolagents",
     # Add any other dependencies you need
@@ -31,10 +31,10 @@ MINUTES = 60  # seconds
 TIME_LIMIT = 10 * MINUTES  # time limit (3540 seconds, just under the 3600s maximum)
 
 # This volume will store any local files needed by the app
-volume = modal.Volume.from_name("youtwo-volume", create_if_missing=True)
+# volume = modal.Volume.from_name("youtwo-volume", create_if_missing=True)
 
 @app.function(
-    volumes={"/data": volume},
+    # volumes={"/data": volume},
     secrets=[
         modal.Secret.from_name("vectara"),
         modal.Secret.from_name("nebius")
