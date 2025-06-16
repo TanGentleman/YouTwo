@@ -41,3 +41,29 @@ all = [
     "youtwo[deployment]",
     "youtwo[graph]"
 ]
+
+# Ruff config
+
+[tool.ruff]
+line-length = 80
+docstring-code-format = true
+docstring-code-line-length = 80
+
+[tool.ruff.lint]
+# Enable Pyflakes and pycodestyle rules
+select = ["E", "F", "W", "I", "C", "N", "Q", "S", "T", "B", "PL"]
+ignore = ["E501"]  # Allow longer lines
+
+# File exclusions
+exclude = [
+    "**/__pycache__",
+    "**/.git", 
+    "**/.venv",
+    "**/node_modules",
+    "**/dist",
+    "**/backend",
+    "**/project-website"
+]
+
+[tool.isort]
+known-first-party = ["youtwo"]
