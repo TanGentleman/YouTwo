@@ -12,19 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 # API handling functions
-def make_convex_api_call(endpoint: str, method: str, data: dict = None) -> Optional[Dict[str, Any]]:
+def make_convex_api_call(endpoint: str, method: str, data: dict = None, url: str | None = None) -> Optional[Dict[str, Any]]:
     """Make request to Convex API"""
-    FORCE_LOAD_DOTENV = True
-    if FORCE_LOAD_DOTENV:
+    if url is None:
         from dotenv import load_dotenv
         load_dotenv()
-    convex_url = os.getenv("CONVEX_URL")
-    if not convex_url:
-        raise ValueError("CONVEX_URL environment variable not set")
-    
-    url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}/{endpoint}"
-    
+        convex_url = os.getenv("CONVEX_URL")
+        if not convex_url:
+            raise ValueError("CONVEX_URL environment variable not set")
+    else:
+        convex_url = url
+    convex_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}/{endpoint}"
     try:
+        assert convex_url.endswith(".site"), "Convex HTTP api base must end with .site"
         response = requests.request(
             method, url, json=data or {}, 
             headers={"Content-Type": "application/json"}
