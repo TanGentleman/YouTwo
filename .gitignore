@@ -1,0 +1,9 @@
+
+.venv/
+node_modules/
+build/
+__pycache__/
+.DS_Store
+.docusaurus/
+*.json
+
