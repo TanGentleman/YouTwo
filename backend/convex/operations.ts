@@ -4,6 +4,14 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { operationsDoc } from "./schema";
 
+export type SimpleOp = {
+  operation: "distill" | "create" | "read" | "update" | "delete";
+  table: "entities" | "relations" | "knowledge" | "journals" | "markdownEmbeddings" | "metadata" | "sources";
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 export async function internalCreateOperations(ctx: MutationCtx, args: {
   operations: {
     operation: "distill" | "create" | "read" | "update" | "delete";
