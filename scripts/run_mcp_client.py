@@ -2,8 +2,10 @@ import asyncio
 import logging
 from pathlib import Path
 from pprint import pprint
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
 from youtwo.server.utils import parse_convex_result
 
 server_params = StdioServerParameters(

@@ -3,16 +3,18 @@
 
 # Must import matplotlib to visualize the graph
 # import matplotlib.pyplot as plt
-from datetime import datetime
 import json
-from langgraph.graph.state import CompiledStateGraph
+from datetime import datetime
+from typing import Any, Dict, List, Tuple
+
 import networkx as nx
-from typing import List, Tuple, Dict, Any
+from langchain_core.messages import AIMessage
+from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
-from langchain_core.messages import HumanMessage, AIMessage
-from langgraph.graph import StateGraph, END
 
 from youtwo.rag.backend import make_convex_api_call
+
 
 # --- State Definition ---
 class KGState(TypedDict):
@@ -49,12 +51,12 @@ def prepare_graph_data(graph_data):
         {"id": e["id"], "name": e["name"], "type": e["entityType"]}
         for e in graph_data["entities"]
     ]
-    
+
     relations = [
         (rel["from"], rel["relationType"], rel["to"])
         for rel in graph_data["relations"]
     ]
-    
+
     return entities, relations
 
 # --- Modified Agent Functions ---
@@ -63,12 +65,12 @@ def data_gatherer(state: KGState) -> KGState:
     # Replace in future with just the entities and relations relevant to the topic
     graph_data = fetch_knowledge_graph(state["frozen"])
     entities, relations = prepare_graph_data(graph_data)
-    
+
     state["entities"] = entities
     state["relations"] = relations
     state["messages"].append(AIMessage(content="Fetched knowledge graph from Convex"))
     state["current_agent"] = "graph_integrator"
-    
+
     return state
 
 def graph_integrator(state: KGState) -> KGState:
@@ -116,13 +118,13 @@ def visualize_graph(graph) -> None:
         print("matplotlib is not installed. Please install it using 'pip install matplotlib'")
         return
     EXPERIMENTAL_GRAPH_VISUALIZATION = True
-    
+
     plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(graph)
 
-    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=1500, font_size=10)
+    nx.draw(graph, pos, with_labels=True, node_color="skyblue", node_size=1500, font_size=10)
 
-    edge_labels = nx.get_edge_attributes(graph, 'relation')
+    edge_labels = nx.get_edge_attributes(graph, "relation")
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
 
     plt.title("Knowledge Graph")
@@ -171,7 +173,7 @@ def main():
         result = run_kg_pipeline("Friends", frozen=False)
     else:
         result = run_kg_pipeline("Friends")
-        
+
     print(result)
     visualize_graph(result["graph"])
 

@@ -1,12 +1,14 @@
 import asyncio
 import logging
 from typing import Any
-from youtwo.server.config import CONVEX_FUNCTION_MAP
-from youtwo.server.server import initialize_mcp, get_function_spec, run_convex_function
+
 from mcp import types
-from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.fastmcp import FastMCP
 
 from youtwo.schemas import BriefEntity, BriefRelation
+from youtwo.server.config import CONVEX_FUNCTION_MAP
+from youtwo.server.server import get_function_spec, initialize_mcp, run_convex_function
+
 
 def get_function_description(function_name: str) -> str:
     if function_name in CONVEX_FUNCTION_MAP:

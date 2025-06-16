@@ -1,9 +1,11 @@
-from pprint import pprint
-import gradio as gr
-from pathlib import Path
-from youtwo.rag.rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
 import logging
+from pathlib import Path
+
+import gradio as gr
+
 from youtwo.agents.agent import agent
+from youtwo.rag.rag import is_allowed_filetype, retrieve_chunks, upload_file_to_vectara
+
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------
@@ -61,26 +63,26 @@ def agent_chat(message: str, chat_history):
 def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
     if not uploaded_file and not file_path:
         return "Please enter a file path or upload a file."
-    
+
     if uploaded_file:
         filepath = Path(uploaded_file.name)
     else:
         filepath = Path(file_path.strip())
-        
+
     if not filepath.exists():
         logging.error(f"Error: The specified file path does not exist: {filepath}")
         return "Error: The uploaded filepath does not exist."
-    
+
     if not is_allowed_filetype(filepath.suffix):
         return f"Error: The uploaded filetype {filepath.suffix} is not supported."
-    
+
     # Obtain the bytes
     with open(filepath, "rb") as file:
         file_contents = file.read()
-        
-    
+
+
     upload_result = upload_file_to_vectara(file_contents, filepath.name)
-    
+
     return f"Uploaded document: {upload_result['id']}"
 
 # ---------------------------

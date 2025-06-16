@@ -1,7 +1,8 @@
-from src.schemas import ConvexCreateEntity, ConvexCreateRelation
-from src.convex_mcp.server import run_convex_function
-from src.schemas import InitResult
 from mcp.types import CallToolResult
+
+from src.convex_mcp.server import run_convex_function
+from src.schemas import ConvexCreateEntity, ConvexCreateRelation, InitResult
+
 
 async def create_entities(deployment_info: InitResult, entities: list[ConvexCreateEntity]) -> CallToolResult:
     deployment_selector = deployment_info["deploymentSelector"]

@@ -1,6 +1,7 @@
-import modal
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import modal
 
 # Current directory path
 src_dir = Path(__file__).parent / "src"
@@ -46,18 +47,18 @@ TIME_LIMIT = 10 * MINUTES  # time limit (3540 seconds, just under the 3600s maxi
 def gradio_app():
     from fastapi import FastAPI
     from gradio.routes import mount_gradio_app
-    
+
     # Add /root to path for imports
     sys.path.append("/root")
-    
+
     # Import RAG functions
     # from rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
     from src.yt_gradio.app import get_gradio_blocks
-    
+
     # ---------------------------
     # Backend Functions
     # ---------------------------
-    
+
     blocks = get_gradio_blocks()    # Mount Gradio app to FastAPI for Modal
     app = FastAPI()
     return mount_gradio_app(app=app, blocks=blocks, path="/")

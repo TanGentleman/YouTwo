@@ -1,14 +1,14 @@
+import asyncio
 import json
 from pathlib import Path
-from pprint import pprint
 from typing import Optional
+
 from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.stdio import stdio_client
 from mcp.types import CallToolResult
-from youtwo.server.config import ALLOWED_FUNCTIONS, CONVEX_PROJECT_DIR, ALLOWED_TOOLS
-from youtwo.schemas import InitResult
-import asyncio
 
+from youtwo.schemas import InitResult
+from youtwo.server.config import ALLOWED_FUNCTIONS, ALLOWED_TOOLS, CONVEX_PROJECT_DIR
 from youtwo.server.utils import async_convex_api_call, parse_convex_result, parse_status
 
 server_params = StdioServerParameters(

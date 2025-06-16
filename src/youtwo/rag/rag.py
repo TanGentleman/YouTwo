@@ -2,9 +2,11 @@ import json
 import logging
 import os
 from pathlib import Path
-import requests
 from pprint import pprint
-from youtwo.schemas import UploadResult, VectaraDoc
+
+import requests
+
+from youtwo.schemas import UploadResult
 
 CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 
@@ -33,7 +35,7 @@ class MetadataFilter:
         """Adds a filter for a specific document ID."""
         self.filters.append(f"doc.id = '{doc_id}'")
         return self
-    
+
     def by_metadata_field(self, field: str, value: str):
         """Adds a filter for a specific metadata field."""
         self.filters.append(f"metadata.{field} = '{value}'")
@@ -82,8 +84,8 @@ def make_vectara_api_call(method: str, endpoint: str, **kwargs) -> dict:
         "Accept": "application/json",
         "x-api-key": api_key,
     })
-    
-    if 'json' in kwargs:
+
+    if "json" in kwargs:
         headers["Content-Type"] = "application/json"
 
     try:
@@ -144,14 +146,14 @@ def upload_file_to_vectara(file_bytes: bytes, filename: str)  -> UploadResult:
     # Check if file_bytes is provided
     if not file_bytes:
         raise IndexingError("No file bytes provided.")
-    
+
     suffix = Path(filename).suffix
     # Ensure valid filename
     if not is_allowed_filetype(suffix):
         raise IndexingError(f"Invalid file type: {suffix}. Please provide a supported file type.")
 
     endpoint = f"corpora/{CORPUS_KEY}/upload_file"
-    files = {'file': (filename, file_bytes)}
+    files = {"file": (filename, file_bytes)}
 
     try:
         response_json = make_vectara_api_call("POST", endpoint, files=files)
@@ -197,9 +199,9 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
         tuple[list[str], str]: A tuple containing a list of retrieved text chunks and the llm generation.
     """
     CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
-    
+
     metadata_filter = MetadataFilter().by_doc_id(filter_by_id).build() if filter_by_id else None
-    
+
     search = {"limit": limit}
     if metadata_filter:
         search["metadata_filter"] = metadata_filter
@@ -225,7 +227,7 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
     try:
         response_json = make_vectara_api_call("POST", endpoint, json=payload)
         pprint(response_json)
-        
+
         retrieved_chunks = []
 
         # Extract search results (chunks)
@@ -234,8 +236,8 @@ def retrieve_chunks(query: str, limit: int = 10, filter_by_id: str = None) -> tu
             for search_result in response_json["search_results"]:
                 if "text" in search_result:
                     retrieved_chunks.append(search_result["text"])
-        
-        
+
+
         # Extract generated summary
         if "summary" in response_json: # Changed from generation_response to summary
             generated_response = response_json["summary"] # Changed from generation_response["text"] to summary
@@ -268,12 +270,12 @@ def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_k
     # Validate inputs
     if not 1 <= limit <= 100:
         raise ValueError("Limit must be between 1 and 100")
-    
-    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
+
+    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ["_", "=", "-"] for c in CORPUS_KEY):
         raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
-    
+
     endpoint = f"corpora/{CORPUS_KEY}/documents"
-    
+
     params = {}
     if limit is not None:
         params["limit"] = limit
@@ -281,7 +283,7 @@ def get_vectara_corpus_info(limit: int = 50, metadata_filter: str = None, page_k
         params["metadata_filter"] = metadata_filter
     if page_key is not None:
         params["page_key"] = page_key
-        
+
     try:
         return make_vectara_api_call("GET", endpoint, params=params)
     except VectaraAPIError as e:
@@ -310,27 +312,27 @@ def fetch_document_by_id(document_id: str) -> dict:
         VectaraAPIError: If there's an error with the Vectara API request.
     """
     from urllib.parse import quote
-    
+
     CORPUS_KEY = "YouTwo"
     request_timeout = 20
     request_timeout_millis = 60000
-    
+
     # Validate corpus key
-    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ['_', '=', '-'] for c in CORPUS_KEY):
+    if len(CORPUS_KEY) > 50 or not all(c.isalnum() or c in ["_", "=", "-"] for c in CORPUS_KEY):
         raise ValueError("corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$")
-    
+
     # Ensure document_id is percent encoded
     encoded_document_id = quote(document_id)
-    
+
     endpoint = f"corpora/{CORPUS_KEY}/documents/{encoded_document_id}"
-    
+
     headers = {}
     # Set timeout parameters if needed
     if request_timeout is not None:
         headers["Request-Timeout"] = str(request_timeout)
     if request_timeout_millis is not None:
         headers["Request-Timeout-Millis"] = str(request_timeout_millis)
-        
+
     try:
         return make_vectara_api_call("GET", endpoint, headers=headers)
     except VectaraAPIError as e:

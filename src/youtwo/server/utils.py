@@ -1,9 +1,12 @@
-from typing import Any, Optional, Dict
-from mcp.types import CallToolResult
 import json
-from src.schemas import InitResult
-import requests
 import os
+from typing import Any, Dict, Optional
+
+import requests
+from mcp.types import CallToolResult
+
+from src.schemas import InitResult
+
 
 async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
     if not statusOutput.content: return None
@@ -44,7 +47,7 @@ async def async_convex_api_call(endpoint: str, method: str, data: dict = None, d
         assert deployment_url.endswith(".site"), "Convex HTTP api base must end with .site"
         url = f"{deployment_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, 
+            method, url, json=data or {},
             headers={"Content-Type": "application/json"}
         )
         response.raise_for_status()

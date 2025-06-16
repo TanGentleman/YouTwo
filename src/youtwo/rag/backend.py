@@ -1,13 +1,13 @@
+import argparse
 import json
 import logging
 import os
-import argparse
-from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import requests
 
+from youtwo.rag.rag import fetch_document_by_id, get_vectara_corpus_info
 from youtwo.schemas import ConvexSource, VectaraDoc
-from youtwo.rag.rag import get_vectara_corpus_info, fetch_document_by_id
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def make_convex_api_call(endpoint: str, method: str, data: dict = None, url: str
         assert convex_url.endswith(".site"), "Convex HTTP api base must end with .site"
         url = f"{convex_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, 
+            method, url, json=data or {},
             headers={"Content-Type": "application/json"}
         )
         response.raise_for_status()
@@ -54,7 +54,7 @@ def test_convex_connection() -> bool:
         "partsCount": 1,
         "type": "Test",
     }
-    
+
     result = upload_sources_to_convex([test_source])
     return result["ok"]
 
@@ -76,7 +76,7 @@ def convert_to_convex_sources(documents: List[VectaraDoc]) -> List[ConvexSource]
     return convex_sources
 
 def upload_sources_to_convex(
-    sources: List[ConvexSource], 
+    sources: List[ConvexSource],
 ) -> Dict[str, Any]:
     """Send sources to Convex"""
     payload = {
@@ -96,9 +96,9 @@ def save_document_to_file(document: dict, folder_path: str, overwrite: bool = Fa
     os.makedirs(folder_path, exist_ok=True)
     filename = f"{document['id']}.json"
     filepath = os.path.join(folder_path, filename)
-    
+
     if overwrite or not os.path.exists(filepath):
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(document, f, indent=2)
         logger.debug(f"Saved document {document['id']}")
 
@@ -106,26 +106,26 @@ def save_document_to_file(document: dict, folder_path: str, overwrite: bool = Fa
 def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexSource]:
     """Process a batch of document IDs"""
     processed_sources = []
-    
+
     for doc_id in doc_ids:
         try:
             document = fetch_document_by_id(doc_id)
             if not document:
                 logger.error(f"Failed to fetch document {doc_id}")
                 continue
-                
+
             save_document_to_file(document, folder_path)
-            
+
             # Skip documents that are too large
             if "storage_usage" in document and document["storage_usage"]["bytes_used"] > 1000000:
                 logger.error(f"Document {doc_id} is too large (>1MB)")
                 continue
-                
+
             processed_sources.extend(convert_to_convex_sources([document]))
-            
+
         except Exception as e:
             logger.error(f"Failed to process {doc_id}: {str(e)}")
-            
+
     return processed_sources
 
 def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 10) -> bool:
@@ -133,47 +133,47 @@ def sync_vectara_to_convex(max_docs: int = 20, batch_size: int = 10) -> bool:
     try:
         # Get existing chunks from Convex
         existing_filenames = get_source_filenames_from_convex()
-        
+
         # Fetch document IDs from Vectara
         docs: list[VectaraDoc] = get_vectara_corpus_info(limit=50)["documents"]
         logger.debug(f"Retrieved {len(docs)} documents from Vectara")
-        
+
         # Filter out existing documents
         id_list = [doc["id"] for doc in docs if doc["id"] not in existing_filenames]
-        
+
         if not id_list:
             logger.info("No new documents to process")
             return True
-            
+
         logger.info(f"Processing {min(max_docs, len(id_list))} of {len(id_list)} new documents")
-        
+
         # Setup document storage
         folder_path = os.path.join(os.path.dirname(__file__), "vectara_documents")
-        
+
         all_success = True
-        
+
         # Process documents in batches
         for batch_start in range(0, min(max_docs, len(id_list)), batch_size):
             batch_ids = id_list[batch_start:batch_start + batch_size]
             processed_sources = process_document_batch(batch_ids, folder_path)
-            
+
             # Send batch if we have any chunks
             if not processed_sources:
                 logger.warning(f"No valid sources in batch {batch_start}-{batch_start + batch_size}")
                 continue
-                
+
             result = upload_sources_to_convex(
-                processed_sources, 
+                processed_sources,
             )
-            
+
             if not result["ok"]:
                 logger.error(f"Failed to send batch {batch_start}-{batch_start + batch_size}")
                 all_success = False
             else:
                 logger.info(f"Sent batch with {len(processed_sources)} sources")
-        
+
         return all_success
-        
+
     except Exception as e:
         logger.error(f"Sync failed: {str(e)}", exc_info=True)
         return False
@@ -182,7 +182,7 @@ def setup_logging(debug: bool = False) -> None:
     """Configure logging based on debug flag"""
     logging.basicConfig(
         level=logging.DEBUG if debug else logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
 def main_from_cli() -> bool:
@@ -192,14 +192,14 @@ def main_from_cli() -> bool:
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("--test-connection", action="store_true", help="Test connection to Convex")
     args = parser.parse_args()
-    
+
     setup_logging(args.debug)
-    
+
     if args.test_connection:
         success = test_convex_connection()
         logger.info("Connection successful!" if success else "Connection failed")
         return success
-    
+
     return sync_vectara_to_convex(args.max_docs)
 
 if __name__ == "__main__":

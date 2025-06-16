@@ -1,6 +1,8 @@
 from smolagents import tool
-from youtwo.server.server import get_graph_data, initialize_mcp
+
 from youtwo.rag.rag import get_filenames_from_vectara, retrieve_chunks
+from youtwo.server.server import get_graph_data, initialize_mcp
+
 
 @tool
 def retrieve_tool(query: str, limit: int = 5, filter_by_id: str = None) -> dict[str, list[str] | str]:
@@ -32,8 +34,9 @@ def inspect_database_tool() -> list[str]:
     return id_list
 
 def ensure_convex_site_url() -> str:
-    from dotenv import load_dotenv
     from os import getenv
+
+    from dotenv import load_dotenv
     load_dotenv()
     direct_url = getenv("CONVEX_SITE_URL")
     if not direct_url:
