@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import requests
 from pprint import pprint
-from src.schemas import UploadResult, VectaraDoc
+from youtwo.schemas import UploadResult, VectaraDoc
 
 CORPUS_KEY = "YouTwo"  # Replace with your actual corpus key
 

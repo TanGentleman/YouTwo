@@ -1,5 +1,5 @@
 # This file provides a simplified interface to the Vectara-Convex sync process
-from src.yt_rag.backend import main_from_cli, test_convex_connection
+from youtwo.rag.backend import main_from_cli, test_convex_connection
 
 if __name__ == "__main__":
     import sys

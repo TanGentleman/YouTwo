@@ -1,9 +1,9 @@
 from pprint import pprint
 import gradio as gr
 from pathlib import Path
-from src.yt_rag.rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
+from youtwo.rag.rag import is_allowed_filetype, upload_file_to_vectara, retrieve_chunks
 import logging
-from src.yt_agent.agent import agent
+from youtwo.agents.agent import agent
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------

@@ -15,14 +15,14 @@ git clone https://github.com/TanGentleman/YouTwo
 cd YouTwo
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python run_gradio_app.py
+pip install -r requirements-extra.txt
+python scripts/run_gradio_app.py
 ```
 
 # Deploy the server
 ```bash
 cd YouTwo
-modal deploy run_modal_app.py
+modal deploy deployment/modal_app.py
 ```
 
 ## Overview

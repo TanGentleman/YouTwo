@@ -12,7 +12,7 @@ from typing_extensions import TypedDict
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 
-from src.yt_rag.backend import make_convex_api_call
+from youtwo.rag.backend import make_convex_api_call
 
 # --- State Definition ---
 class KGState(TypedDict):

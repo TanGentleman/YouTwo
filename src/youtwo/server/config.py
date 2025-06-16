@@ -1,6 +1,6 @@
 from pathlib import Path
 
-CONVEX_PROJECT_DIR = Path(__file__).parent.parent.parent / "backend"
+CONVEX_PROJECT_DIR = Path(__file__).parent.parent.parent.parent / "backend"
 ALLOWED_TOOLS = ["status", "functionSpec", "run"]
 
 CONVEX_FUNCTION_MAP = {

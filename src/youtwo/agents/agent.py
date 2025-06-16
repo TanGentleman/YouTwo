@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from smolagents import CodeAgent, InferenceClientModel
 
-from src.yt_agent.tools import retrieve_tool, inspect_database_tool
+from youtwo.agents.tools import retrieve_tool, inspect_database_tool
 
 # Load environment variables
 load_dotenv()

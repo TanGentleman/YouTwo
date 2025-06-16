@@ -2,11 +2,12 @@ import json
 import logging
 import os
 import argparse
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import requests
 
-from src.schemas import ConvexSource, VectaraDoc
-from src.yt_rag.rag import get_vectara_corpus_info, fetch_document_by_id
+from youtwo.schemas import ConvexSource, VectaraDoc
+from youtwo.rag.rag import get_vectara_corpus_info, fetch_document_by_id
 
 logger = logging.getLogger(__name__)
 
@@ -198,4 +199,6 @@ def main_from_cli() -> bool:
     return sync_vectara_to_convex(args.max_docs)
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     main_from_cli()

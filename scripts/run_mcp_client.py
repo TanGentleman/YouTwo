@@ -1,15 +1,14 @@
 import asyncio
 import logging
-import json
 from pathlib import Path
 from pprint import pprint
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from src.convex_mcp.utils import parse_convex_result
+from youtwo.server.utils import parse_convex_result
 
 server_params = StdioServerParameters(
     command="uv",
-    args=["--directory", f"{Path(__file__).parent.resolve()}", "run", "run_mcp.py"],
+    args=["--directory", f"{Path(__file__).parent.resolve()}", "run", "scripts/run_mcp.py"],
     env=None
 )
 

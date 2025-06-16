@@ -1,6 +1,6 @@
 from smolagents import tool
-from src.convex_mcp.server import get_graph_data, initialize_mcp
-from src.yt_rag.rag import get_filenames_from_vectara, retrieve_chunks
+from youtwo.server.server import get_graph_data, initialize_mcp
+from youtwo.rag.rag import get_filenames_from_vectara, retrieve_chunks
 
 @tool
 def retrieve_tool(query: str, limit: int = 5, filter_by_id: str = None) -> dict[str, list[str] | str]:
