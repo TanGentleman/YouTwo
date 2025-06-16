@@ -27,11 +27,13 @@ class KGState(TypedDict):
     validation: Dict[str, Any]
     messages: List[Any]
     current_agent: str  # used by LangGraph state router
-    frozen: bool # for experimental graph storage
+    frozen: bool  # for experimental graph storage
+
 
 # --- Helper Functions ---
 
-def fetch_knowledge_graph(from_frozen = True):
+
+def fetch_knowledge_graph(from_frozen=True):
     """Fetch knowledge graph from Convex HTTP API"""
     date_str = datetime.now().strftime("%Y-%m-%d")
     if from_frozen:
@@ -45,6 +47,7 @@ def fetch_knowledge_graph(from_frozen = True):
         json.dump(knowledge_graph, f)
     return knowledge_graph
 
+
 def prepare_graph_data(graph_data):
     """Convert Convex graph data to pipeline format"""
     entities = [
@@ -53,11 +56,11 @@ def prepare_graph_data(graph_data):
     ]
 
     relations = [
-        (rel["from"], rel["relationType"], rel["to"])
-        for rel in graph_data["relations"]
+        (rel["from"], rel["relationType"], rel["to"]) for rel in graph_data["relations"]
     ]
 
     return entities, relations
+
 
 # --- Modified Agent Functions ---
 def data_gatherer(state: KGState) -> KGState:
@@ -73,6 +76,7 @@ def data_gatherer(state: KGState) -> KGState:
 
     return state
 
+
 def graph_integrator(state: KGState) -> KGState:
     print("📊 Graph Integrator: Building the knowledge graph")
     G = nx.DiGraph()
@@ -85,11 +89,16 @@ def graph_integrator(state: KGState) -> KGState:
         G.add_edge(s, o, relation=p)
 
     state["graph"] = G
-    state["messages"].append(AIMessage(content=f"Built graph with {len(G.nodes)} nodes and {len(G.edges)} edges"))
+    state["messages"].append(
+        AIMessage(
+            content=f"Built graph with {len(G.nodes)} nodes and {len(G.edges)} edges"
+        )
+    )
 
     state["current_agent"] = "graph_validator"
 
     return state
+
 
 def graph_validator(state: KGState) -> KGState:
     print("✅ Graph Validator: Validating knowledge graph")
@@ -99,40 +108,50 @@ def graph_validator(state: KGState) -> KGState:
         "num_nodes": len(G.nodes),
         "num_edges": len(G.edges),
         "is_connected": nx.is_weakly_connected(G) if G.nodes else False,
-        "has_cycles": not nx.is_directed_acyclic_graph(G) if G.nodes else False
+        "has_cycles": not nx.is_directed_acyclic_graph(G) if G.nodes else False,
     }
 
     state["validation"] = validation_report
-    state["messages"].append(AIMessage(content=f"Validation report: {validation_report}"))
+    state["messages"].append(
+        AIMessage(content=f"Validation report: {validation_report}")
+    )
     print(f"   Validation report: {validation_report}")
 
     state["current_agent"] = END
 
     return state
 
+
 def visualize_graph(graph) -> None:
     """Visualize the knowledge graph using NetworkX and Matplotlib"""
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        print("matplotlib is not installed. Please install it using 'pip install matplotlib'")
+        print(
+            "matplotlib is not installed. Please install it using 'pip install matplotlib'"
+        )
         return
     EXPERIMENTAL_GRAPH_VISUALIZATION = True
 
     plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(graph)
 
-    nx.draw(graph, pos, with_labels=True, node_color="skyblue", node_size=1500, font_size=10)
+    nx.draw(
+        graph, pos, with_labels=True, node_color="skyblue", node_size=1500, font_size=10
+    )
 
     edge_labels = nx.get_edge_attributes(graph, "relation")
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
 
     plt.title("Knowledge Graph")
     if EXPERIMENTAL_GRAPH_VISUALIZATION:
-        plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.2, hspace=0.2)
+        plt.subplots_adjust(
+            left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.2, hspace=0.2
+        )
     else:
         plt.tight_layout()
     plt.show()
+
 
 def build_kg_graph() -> CompiledStateGraph:
     workflow = StateGraph(KGState)
@@ -161,14 +180,16 @@ def run_kg_pipeline(topic, frozen=True):
         "validation": {},
         "messages": [],
         "current_agent": "data_gatherer",
-        "frozen": frozen
+        "frozen": frozen,
     }
     graph = build_kg_graph()
     result = graph.invoke(initial_state)
     return result
 
+
 def main():
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "--force":
         result = run_kg_pipeline("Friends", frozen=False)
     else:
@@ -176,6 +197,7 @@ def main():
 
     print(result)
     visualize_graph(result["graph"])
+
 
 if __name__ == "__main__":
     main()

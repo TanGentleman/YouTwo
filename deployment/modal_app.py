@@ -10,19 +10,23 @@ gradio_dir = src_dir / "yt_gradio"
 rag_dir = src_dir / "yt_rag"
 
 # Create Modal image with required dependencies
-web_image = modal.Image.debian_slim(python_version="3.10").pip_install(
-    "python-dotenv",
-    "fastapi[standard]==0.115.4",
-    "gradio[mcp]==5.33.1",
-    "requests",
-    "smolagents",
-    # Add any other dependencies you need
-).add_local_file(rag_dir / "rag.py", "/root/src/yt_rag/rag.py") \
-.add_local_file(gradio_dir / "app.py", "/root/src/yt_gradio/app.py") \
-.add_local_file(agent_dir / "agent.py", "/root/src/yt_agent/agent.py") \
-.add_local_file(agent_dir / "prompts.py", "/root/src/yt_agent/prompts.py") \
-.add_local_file(agent_dir / "tools.py", "/root/src/yt_agent/tools.py") \
-.add_local_file(src_dir / "schemas.py", "/root/src/schemas.py")
+web_image = (
+    modal.Image.debian_slim(python_version="3.10")
+    .pip_install(
+        "python-dotenv",
+        "fastapi[standard]==0.115.4",
+        "gradio[mcp]==5.33.1",
+        "requests",
+        "smolagents",
+        # Add any other dependencies you need
+    )
+    .add_local_file(rag_dir / "rag.py", "/root/src/yt_rag/rag.py")
+    .add_local_file(gradio_dir / "app.py", "/root/src/yt_gradio/app.py")
+    .add_local_file(agent_dir / "agent.py", "/root/src/yt_agent/agent.py")
+    .add_local_file(agent_dir / "prompts.py", "/root/src/yt_agent/prompts.py")
+    .add_local_file(agent_dir / "tools.py", "/root/src/yt_agent/tools.py")
+    .add_local_file(src_dir / "schemas.py", "/root/src/schemas.py")
+)
 
 app = modal.App("youtwo-gradio", image=web_image)
 
@@ -34,12 +38,10 @@ TIME_LIMIT = 10 * MINUTES  # time limit (3540 seconds, just under the 3600s maxi
 # This volume will store any local files needed by the app
 # volume = modal.Volume.from_name("youtwo-volume", create_if_missing=True)
 
+
 @app.function(
     # volumes={"/data": volume},
-    secrets=[
-        modal.Secret.from_name("vectara"),
-        modal.Secret.from_name("nebius")
-    ],
+    secrets=[modal.Secret.from_name("vectara"), modal.Secret.from_name("nebius")],
     max_containers=1,
     scaledown_window=TIME_LIMIT,  # 3540 seconds, within the allowed 2-3600 second range
 )
@@ -59,7 +61,7 @@ def gradio_app():
     # Backend Functions
     # ---------------------------
 
-    blocks = get_gradio_blocks()    # Mount Gradio app to FastAPI for Modal
+    blocks = get_gradio_blocks()  # Mount Gradio app to FastAPI for Modal
     app = FastAPI()
     return mount_gradio_app(app=app, blocks=blocks, path="/")
 

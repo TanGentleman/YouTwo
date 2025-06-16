@@ -11,7 +11,7 @@ CONVEX_FUNCTION_MAP = {
     "entities.js:addObservations": "Add observations to an entity (by name)",
     "entities.js:deleteObservations": "Delete observations from an entity (by name)",
     "relations.js:createRelations": "Create relations between entities (by name)",
-    "relations.js:deleteRelations": "Delete relations between entities (by name)"
+    "relations.js:deleteRelations": "Delete relations between entities (by name)",
 }
 
 ALLOWED_FUNCTIONS = list(CONVEX_FUNCTION_MAP.keys())

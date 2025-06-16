@@ -6,9 +6,16 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(description="Sync Vectara documents to Convex")
-    parser.add_argument("--max-docs", type=int, default=20, help="Maximum number of documents to process")
+    parser.add_argument(
+        "--max-docs",
+        type=int,
+        default=20,
+        help="Maximum number of documents to process",
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    parser.add_argument("--test", action="store_true", help="Just test the Convex connection")
+    parser.add_argument(
+        "--test", action="store_true", help="Just test the Convex connection"
+    )
     args = parser.parse_args()
 
     # Build sys.argv for the backend function

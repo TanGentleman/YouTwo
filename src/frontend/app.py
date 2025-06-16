@@ -36,6 +36,7 @@ def natural_language_handler(query: str) -> str:
     chunks, response = retrieve_chunks(query, limit=5)
     return f"*Retrieved {len(chunks)} chunks.*\n------\n{response}"
 
+
 def agent_chat(message: str, chat_history):
     if not message.strip():
         return chat_history, ""
@@ -46,7 +47,9 @@ def agent_chat(message: str, chat_history):
     # Run your agent
     response = agent.run(message)
     if isinstance(response, dict):
-        parsed_response = response.get("output") or response.get("answer") or str(response)
+        parsed_response = (
+            response.get("output") or response.get("answer") or str(response)
+        )
     else:
         parsed_response = str(response)
 
@@ -54,6 +57,7 @@ def agent_chat(message: str, chat_history):
     chat_history.append({"role": "assistant", "content": parsed_response})
 
     return chat_history, ""
+
 
 # Gradio Behavior:
 # Textbox: As input component: Passes text value as a str into the function.
@@ -80,18 +84,21 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
     with open(filepath, "rb") as file:
         file_contents = file.read()
 
-
     upload_result = upload_file_to_vectara(file_contents, filepath.name)
 
     return f"Uploaded document: {upload_result['id']}"
+
 
 # ---------------------------
 # Gradio UI (Blocks API)
 # ---------------------------
 
+
 def get_gradio_blocks():
     with gr.Blocks(title="YouTwo Memory Agent Interface") as demo:
-        gr.Markdown("## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration")
+        gr.Markdown(
+            "## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration"
+        )
 
         with gr.Tab("🗣️ Grounded Q&A"):
             gr.Markdown("Input natural language requests for system actions.")
@@ -99,17 +106,35 @@ def get_gradio_blocks():
                 user_query = gr.Textbox(label="Type your query")
             query_btn = gr.Button("Process Request")
             query_out = gr.Textbox(label="System Response")
-            query_btn.click(fn=natural_language_handler, inputs=user_query, outputs=query_out)
+            query_btn.click(
+                fn=natural_language_handler, inputs=user_query, outputs=query_out
+            )
 
         with gr.Tab("⚙️ Agentic Chat"):
             gr.Markdown("Chat using memory tools")
-            chatbot = gr.Chatbot(label="YT Agent", height=500, show_label=True, container=True, type="messages",
+            chatbot = gr.Chatbot(
+                label="YT Agent",
+                height=500,
+                show_label=True,
+                container=True,
+                type="messages",
                 bubble_full_width=False,
                 value=[
-                    {"role": "assistant", "content": "👋 Hello! I'm the YouTwo Agent, your intelligent assistant for really good memory. How can I help you today?"}
-                ])
-            user_input = gr.Textbox(placeholder="Type your question...", label="Message", lines=2, scale=4, show_label=False, value="Inspect the database, then tell me about the connection of psychotherapy and theater.")
-            #clear_button = gr.Button("🗑️ Clear Chat", size="sm")
+                    {
+                        "role": "assistant",
+                        "content": "👋 Hello! I'm the YouTwo Agent, your intelligent assistant for really good memory. How can I help you today?",
+                    }
+                ],
+            )
+            user_input = gr.Textbox(
+                placeholder="Type your question...",
+                label="Message",
+                lines=2,
+                scale=4,
+                show_label=False,
+                value="Inspect the database, then tell me about the connection of psychotherapy and theater.",
+            )
+            # clear_button = gr.Button("🗑️ Clear Chat", size="sm")
             send_btn = gr.Button("Send", variant="primary", scale=1)
 
             # Wire up the button (and hitting Enter) to call `agent_chat`
@@ -117,13 +142,13 @@ def get_gradio_blocks():
                 fn=agent_chat,
                 inputs=[user_input, chatbot],
                 outputs=[chatbot, user_input],
-                show_progress=True
+                show_progress=True,
             )
             user_input.submit(
                 fn=agent_chat,
                 inputs=[user_input, chatbot],
                 outputs=[chatbot, user_input],
-                #outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
+                # outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
             )
 
         with gr.Tab("🗣️Input File"):
@@ -133,15 +158,21 @@ def get_gradio_blocks():
                 file_upload_input = gr.File(label="Upload a File", type="filepath")
             submit_btn = gr.Button("Submit")
             output = gr.Textbox(label="Result")
-            submit_btn.click(fn=handle_file_input, inputs=[file_path_input, file_upload_input], outputs=output)
+            submit_btn.click(
+                fn=handle_file_input,
+                inputs=[file_path_input, file_upload_input],
+                outputs=output,
+            )
 
     return demo
+
 
 # ---------------------------
 # Launch as MCP Server
 # ---------------------------
 if __name__ == "__main__":
     from dotenv import load_dotenv
+
     load_dotenv()
     demo = get_gradio_blocks()
     demo.launch(mcp_server=True)

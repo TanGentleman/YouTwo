@@ -16,6 +16,7 @@ def get_function_description(function_name: str) -> str:
     else:
         raise ValueError(f"Unknown function: {function_name}")
 
+
 def get_tools() -> None | list[types.Tool]:
     deployment_info = asyncio.run(initialize_mcp())
     if not deployment_info:
@@ -39,6 +40,7 @@ def get_tools() -> None | list[types.Tool]:
         )
     return tools
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -49,25 +51,39 @@ if not deployment_info:
     exit(1)
 MCP_KEY = deployment_info["deploymentSelector"]
 
+
 @app.tool()
 async def get_entities() -> list[BriefEntity]:
     return await run_convex_function(MCP_KEY, "entities:getBriefEntities", {})
 
+
 @app.tool()
 async def create_entities(entities: list[BriefEntity]) -> Any:
-    return await run_convex_function(MCP_KEY, "entities:createEntities", {"entities": entities})
+    return await run_convex_function(
+        MCP_KEY, "entities:createEntities", {"entities": entities}
+    )
+
 
 @app.tool()
 async def delete_entities(entity_names: list[str]) -> Any:
-    return await run_convex_function(MCP_KEY, "entities:deleteEntities", {"entityNames": entity_names})
+    return await run_convex_function(
+        MCP_KEY, "entities:deleteEntities", {"entityNames": entity_names}
+    )
+
 
 @app.tool()
 async def create_relations(relations: list[BriefRelation]) -> Any:
-    return await run_convex_function(MCP_KEY, "relations:createRelations", {"relations": relations})
+    return await run_convex_function(
+        MCP_KEY, "relations:createRelations", {"relations": relations}
+    )
+
 
 @app.tool()
 async def delete_relations(relations: list[BriefRelation]) -> Any:
-    return await run_convex_function(MCP_KEY, "relations:deleteRelations", {"relations": relations})
+    return await run_convex_function(
+        MCP_KEY, "relations:deleteRelations", {"relations": relations}
+    )
+
 
 @app.tool()
 async def get_graph() -> Any:
