@@ -5,41 +5,8 @@ from typing import Any
 from mcp import types
 from mcp.server.fastmcp import FastMCP
 
-from youtwo.schemas import BriefEntity, BriefRelation
-from youtwo.server.config import CONVEX_FUNCTION_MAP
+from youtwo.schemas import BriefEntity, BriefRelation, Observation
 from youtwo.server.server import get_function_spec, initialize_mcp, run_convex_function
-
-
-def get_function_description(function_name: str) -> str:
-    if function_name in CONVEX_FUNCTION_MAP:
-        return CONVEX_FUNCTION_MAP[function_name]
-    else:
-        raise ValueError(f"Unknown function: {function_name}")
-
-
-def get_tools() -> None | list[types.Tool]:
-    deployment_info = asyncio.run(initialize_mcp())
-    if not deployment_info:
-        print("No deployment found")
-        return
-    function_spec = asyncio.run(get_function_spec(deployment_info))
-    tools = []
-    for func in function_spec:
-        function_name = func["identifier"]
-        function_type = func["functionType"]
-        function_args = func["args"]
-        print("Function: ", function_name, "Type: ", function_type)
-        print("Args: ", function_args)
-        print("--------------------------------")
-        tools.append(
-            types.Tool(
-                name=function_name,
-                description=get_function_description(function_name),
-                inputSchema=function_args,
-            )
-        )
-    return tools
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,13 +19,27 @@ if not deployment_info:
 MCP_KEY = deployment_info["deploymentSelector"]
 
 
+def correct_relation_format(relations: list[BriefRelation]) -> list[BriefRelation]:
+    return [
+        {"from": relation["source"],
+         "relationType": relation["relationType"],
+         "to": relation["target"]}
+        for relation in relations]
+
 @app.tool()
 async def get_entities() -> list[BriefEntity]:
-    return await run_convex_function(MCP_KEY, "entities:getBriefEntities", {})
+    """
+    Get all entities.
+    """
+    result = await run_convex_function(MCP_KEY, "entities:getBriefEntities", {})
+    return result
 
 
 @app.tool()
 async def create_entities(entities: list[BriefEntity]) -> Any:
+    """
+    Create new entities.
+    """
     return await run_convex_function(
         MCP_KEY, "entities:createEntities", {"entities": entities}
     )
@@ -66,6 +47,9 @@ async def create_entities(entities: list[BriefEntity]) -> Any:
 
 @app.tool()
 async def delete_entities(entity_names: list[str]) -> Any:
+    """
+    Delete entities by name.
+    """
     return await run_convex_function(
         MCP_KEY, "entities:deleteEntities", {"entityNames": entity_names}
     )
@@ -73,22 +57,56 @@ async def delete_entities(entity_names: list[str]) -> Any:
 
 @app.tool()
 async def create_relations(relations: list[BriefRelation]) -> Any:
+    """
+    Create relations between existing entities.
+    """
+    relations = correct_relation_format(relations)
     return await run_convex_function(
         MCP_KEY, "relations:createRelations", {"relations": relations}
     )
 
-
 @app.tool()
 async def delete_relations(relations: list[BriefRelation]) -> Any:
+    """
+    Delete relations between entities.
+    """
+    relations = correct_relation_format(relations)
     return await run_convex_function(
         MCP_KEY, "relations:deleteRelations", {"relations": relations}
     )
 
+@app.tool()
+async def add_observations(observations: list[Observation]) -> Any:
+    """
+    Add observations to existing entities.
+    """
+    return await run_convex_function(
+        MCP_KEY, "entities:addObservations", {"observations": observations}
+    )
+
+@app.tool()
+async def delete_observations(observations: list[Observation]) -> Any:
+    """
+    Delete observations from existing entities.
+    """
+    return await run_convex_function(
+        MCP_KEY, "entities:deleteObservations", {"observations": observations}
+    )
 
 @app.tool()
 async def get_graph() -> Any:
+    """
+    Read the graph of the knowledge base.
+    """
     return await run_convex_function(MCP_KEY, "knowledge:readGraph", {})
 
+
+@app.tool()
+async def get_tools() -> list[types.Tool]:
+    """
+    Get a list of available tools and their specifications.
+    """
+    return await get_function_spec(deployment_info)
 
 # @app.call_tool()
 # async def call_tool(
