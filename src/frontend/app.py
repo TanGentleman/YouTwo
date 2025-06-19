@@ -97,7 +97,7 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
 
 
 def get_gradio_blocks():
-    with gr.Blocks(title="YouTwo Memory Agent Interface") as demo:
+    with gr.Blocks(title="YouTwo Memory Agent Interface", analytics_enabled=False) as demo:
         gr.Markdown(
             "## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration"
         )
