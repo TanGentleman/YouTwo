@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+
 def save_dict_to_file(data: dict, filepath: str):
     """
     Saves the data to a JSON file.

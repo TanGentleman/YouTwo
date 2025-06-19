@@ -112,7 +112,7 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexS
             if not document:
                 logger.error(f"Failed to fetch document {doc_id}")
                 continue
-            
+
             filepath = os.path.join(folder_path, f"{doc_id}.json")
             save_dict_to_file(document, filepath)
 
@@ -141,6 +141,7 @@ def setup_logging(debug: bool = False) -> None:
 
 def main_from_cli() -> bool:
     """Process command line arguments and run the appropriate function"""
+    from youtwo.rag.pipelines import sync_vectara_to_convex
     parser = argparse.ArgumentParser(
         description="Process documents and send chunks to Convex"
     )
@@ -164,7 +165,4 @@ def main_from_cli() -> bool:
 
 
 if __name__ == "__main__":
-    from dotenv import load_dotenv
-
-    load_dotenv()
     main_from_cli()

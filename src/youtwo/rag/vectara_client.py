@@ -6,6 +6,7 @@ from typing import List, Tuple
 from urllib.parse import quote
 
 import requests
+from typing_extensions import TypedDict
 
 from youtwo.exceptions import IndexingError
 from youtwo.schemas import UploadResult, VectaraDoc
@@ -18,6 +19,10 @@ class VectaraAPIError(Exception):
     """Custom exception for Vectara API errors."""
     pass
 
+class UploadFileInputSchema(TypedDict):
+    file: bytes
+    filename: str
+    metadata: dict
 
 class MetadataFilter:
     """
@@ -128,19 +133,19 @@ class VectaraClient:
             api_key (str, optional): The Vectara API key. If not provided, looks for VECTARA_API_KEY env var.
         """
         self.base_url = "https://api.vectara.io/v2"
-        
+
         # Load environment variables if needed
         if api_key is None:
             from dotenv import load_dotenv
             load_dotenv()
             api_key = os.getenv("VECTARA_API_KEY")
-        
+
         if corpus_key is None:
             corpus_key = os.getenv("VECTARA_CORPUS_KEY", "YouTwo")
-            
+
         self.corpus_key = corpus_key
         self.api_key = api_key
-        
+
         if not self.api_key:
             raise VectaraAPIError(
                 "Vectara API key not set. Please provide api_key or set the VECTARA_API_KEY environment variable."
@@ -192,6 +197,7 @@ class VectaraClient:
             raise VectaraAPIError(
                 f"An unexpected error occurred during Vectara API call: {e}"
             ) from e
+
 
     def upload_file(self, file_bytes: bytes, filename: str) -> UploadResult:
         """
@@ -389,7 +395,7 @@ if __name__ == "__main__":
     if not filenames:
         print("No documents found")
         exit()
-    
+
     first_file = filenames[0]
     metadata_filter = MetadataFilter().by_doc_id(first_file).build()
     print("Testing metadata_filter:", metadata_filter)
