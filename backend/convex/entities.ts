@@ -19,12 +19,21 @@ export const getEntityFromName = async (ctx: QueryCtx | MutationCtx, name: strin
 }
 
 export const getBriefEntities = internalQuery({
-  args: {},
+  args: {
+    limit: v.optional(v.number()),
+  },
   returns: v.array(v.object({
     name: v.string(),
     entityType: v.string(),
   })),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
+    if (args.limit && 1 <= args.limit && args.limit <= 200) {
+      return (await ctx.db.query("entities").take(args.limit)).map(entity => ({
+        // _id: entity._id,
+        name: entity.name,
+        entityType: entity.entityType,
+      }));
+    }
     return (await ctx.db.query("entities").collect()).map(entity => ({
       // _id: entity._id,
       name: entity.name,

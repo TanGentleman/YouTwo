@@ -4,6 +4,27 @@ import { httpAction } from "./_generated/server";
 const http = httpRouter();
 
 /**
+ * Get entities via HTTP API
+ */
+http.route({
+  path: "/entities",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const result = await ctx.runQuery(internal.entities.getBriefEntities, {});
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Failed to retrieve entities" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }),
+});
+
+/**
  * Create entities via HTTP API
  */
 http.route({

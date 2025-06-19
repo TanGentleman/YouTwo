@@ -212,6 +212,7 @@ export const testHttpEndpoints = internalAction({
     }
 
     // Get the deployment URL from environment
+    // @ts-expect-error
     const deploymentUrl = process.env.CONVEX_URL;
     if (!deploymentUrl) {
       return {
