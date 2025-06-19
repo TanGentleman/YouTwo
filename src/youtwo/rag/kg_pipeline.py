@@ -3,6 +3,7 @@
 
 # Must import matplotlib to visualize the graph
 # import matplotlib.pyplot as plt
+import asyncio
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Tuple
@@ -13,7 +14,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
 
-from youtwo.rag.backend import make_convex_api_call
+from youtwo.server.utils import async_convex_api_call
 
 
 # --- State Definition ---
@@ -33,7 +34,7 @@ class KGState(TypedDict):
 # --- Helper Functions ---
 
 
-def fetch_knowledge_graph(from_frozen=True):
+async def fetch_knowledge_graph(from_frozen=True):
     """Fetch knowledge graph from Convex HTTP API"""
     date_str = datetime.now().strftime("%Y-%m-%d")
     if from_frozen:
@@ -42,16 +43,15 @@ def fetch_knowledge_graph(from_frozen=True):
                 return json.load(f)
         except FileNotFoundError:
             print("Knowledge graph file not found. Fetching from Convex...")
-    knowledge_graph = make_convex_api_call("graph", "GET")
+    knowledge_graph = await async_convex_api_call("graph", "GET")
     with open(f"knowledge_graph-{date_str}.json", "w") as f:
         json.dump(knowledge_graph, f)
     return knowledge_graph
 
-
 def prepare_graph_data(graph_data):
     """Convert Convex graph data to pipeline format"""
     entities = [
-        {"id": e["id"], "name": e["name"], "type": e["entityType"]}
+        {"name": e["name"], "type": e["entityType"]}
         for e in graph_data["entities"]
     ]
 
@@ -63,10 +63,10 @@ def prepare_graph_data(graph_data):
 
 
 # --- Modified Agent Functions ---
-def data_gatherer(state: KGState) -> KGState:
+async def data_gatherer(state: KGState) -> KGState:
     print("📚 Data Gatherer: Fetching knowledge graph from Convex")
     # Replace in future with just the entities and relations relevant to the topic
-    graph_data = fetch_knowledge_graph(state["frozen"])
+    graph_data = await fetch_knowledge_graph(state["frozen"])
     entities, relations = prepare_graph_data(graph_data)
 
     state["entities"] = entities
@@ -77,7 +77,7 @@ def data_gatherer(state: KGState) -> KGState:
     return state
 
 
-def graph_integrator(state: KGState) -> KGState:
+async def graph_integrator(state: KGState) -> KGState:
     print("📊 Graph Integrator: Building the knowledge graph")
     G = nx.DiGraph()
 
@@ -100,7 +100,7 @@ def graph_integrator(state: KGState) -> KGState:
     return state
 
 
-def graph_validator(state: KGState) -> KGState:
+async def graph_validator(state: KGState) -> KGState:
     print("✅ Graph Validator: Validating knowledge graph")
     G = state["graph"]
 
@@ -153,6 +153,31 @@ def visualize_graph(graph) -> None:
     plt.show()
 
 
+def alternate_visualize_graph(entities: List[Dict[str, str]], relations: List[Tuple[str, str, str]]) -> None:
+    """Visualize the knowledge graph using Graphviz"""
+    try:
+        from graphviz import Digraph
+    except ImportError:
+        print(
+            "graphviz is not installed. Please install it using 'pip install graphviz'"
+        )
+        return
+
+    dot = Digraph(comment="Knowledge Graph", format="png")
+
+    # Add nodes
+    for node in entities:
+        dot.node(node["name"], node["name"])
+
+    # Add edges
+    for s, p, o in relations:
+        dot.edge(s, o, label=p)
+
+    # Render the graph to a file and open it
+    output_path = dot.render("knowledge_graph", view=True, cleanup=True)
+    print(f"Graph rendered and saved to {output_path}")
+
+
 def build_kg_graph() -> CompiledStateGraph:
     workflow = StateGraph(KGState)
 
@@ -169,7 +194,7 @@ def build_kg_graph() -> CompiledStateGraph:
 
 
 # --- Pipeline Execution Hook ---
-def run_kg_pipeline(topic, frozen=True):
+async def run_kg_pipeline(topic, frozen=True):
     initial_state = {
         "topic": topic,
         "raw_text": "",
@@ -183,21 +208,24 @@ def run_kg_pipeline(topic, frozen=True):
         "frozen": frozen,
     }
     graph = build_kg_graph()
-    result = graph.invoke(initial_state)
+    result = await graph.ainvoke(initial_state)
     return result
 
 
-def main():
+async def main():
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == "--force":
-        result = run_kg_pipeline("Friends", frozen=False)
+        result = await run_kg_pipeline("Friends", frozen=False)
     else:
-        result = run_kg_pipeline("Friends")
+        result = await run_kg_pipeline("Friends")
 
     print(result)
-    visualize_graph(result["graph"])
+    alternate_visualize_graph(result["entities"], result["relations"])
 
 
 if __name__ == "__main__":
-    main()
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    asyncio.run(main())

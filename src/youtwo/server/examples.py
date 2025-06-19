@@ -19,8 +19,8 @@ ENTITY_3 = {
     "journalIds": [],
 }
 
-RELATION_1 = {"to": ENTITY_1["name"], "from": ENTITY_2["name"], "relationType": "loves"}
+RELATION_1 = {"target": ENTITY_1["name"], "source": ENTITY_2["name"], "relationType": "loves"}
 
-RELATION_2 = {"to": ENTITY_2["name"], "from": ENTITY_1["name"], "relationType": "loves"}
+RELATION_2 = {"target": ENTITY_2["name"], "source": ENTITY_1["name"], "relationType": "loves"}
 
-RELATION_3 = {"to": ENTITY_1["name"], "from": ENTITY_3["name"], "relationType": "likes"}
+RELATION_3 = {"target": ENTITY_1["name"], "source": ENTITY_3["name"], "relationType": "likes"}

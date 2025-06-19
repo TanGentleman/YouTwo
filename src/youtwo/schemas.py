@@ -53,7 +53,6 @@ class ConvexCreateEntity(TypedDict):
     name: str
     entityType: str
     observations: NotRequired[list[str]]
-    updatedAt: NotRequired[int]
     journalIds: NotRequired[list[str]]
 
 
@@ -61,7 +60,6 @@ class ConvexCreateRelation(TypedDict):
     toId: str
     fromId: str
     relationType: str
-    updatedAt: NotRequired[int]
     journalIds: NotRequired[list[str]]
 
 
@@ -83,11 +81,15 @@ class BriefEntity(TypedDict):
     name: str
     entityType: str
 
+class Observation(TypedDict):
+    entityName: str
+    contents: list[str]
 
 class BriefRelation(TypedDict):
-    fromEntity: str
-    toEntity: str
+    source: str
     relationType: str
+    target: str
+
 
 
 class InitResult(TypedDict):

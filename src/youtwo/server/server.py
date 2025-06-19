@@ -5,33 +5,31 @@ from typing import Optional
 
 from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.stdio import stdio_client
-from mcp.types import CallToolResult
 
+from youtwo.exceptions import ToolCallError
 from youtwo.schemas import InitResult
-from youtwo.server.config import ALLOWED_FUNCTIONS, ALLOWED_TOOLS, CONVEX_PROJECT_DIR
-from youtwo.server.utils import async_convex_api_call, parse_convex_result, parse_status
+from youtwo.server.config import ALLOWED_TOOLS, CONVEX_FUNCTION_MAP, CONVEX_PROJECT_DIR
+from youtwo.server.utils import async_convex_api_call, dictify_tool_call, parse_status
 
 server_params = StdioServerParameters(
     command="npx", args=["-y", "convex@latest", "mcp", "start"], env=None
 )
 
-
-def print_tools(tools: list[Tool]):
+def print_tool_info(tools: list[Tool]):
     for tool in tools:
         print(
             f"Tool: {tool.name}\nDescription: {tool.description}\nInput Schema: {tool.inputSchema}\n--------------------------------"
         )
 
 
-async def list_tools():
+async def print_tools() -> None:
     async with (
         stdio_client(server_params) as (read, write),
         ClientSession(read, write) as session,
     ):
         await session.initialize()
-        print_tools(
-            [t for t in (await session.list_tools()).tools if t.name in ALLOWED_TOOLS]
-        )
+        tools = [t for t in (await session.list_tools()).tools if t.name in ALLOWED_TOOLS]
+        print_tool_info(tools)
 
 
 def check_convex_project(projectDir: str) -> bool:
@@ -49,14 +47,14 @@ def check_convex_project(projectDir: str) -> bool:
 
 async def run_convex_function(
     deployment_selector: str, function_name: str, args: dict
-) -> CallToolResult:
+) -> dict | None:
     async with (
         stdio_client(server_params) as (read, write),
         ClientSession(read, write) as session,
     ):
         try:
             await session.initialize()
-            return await session.call_tool(
+            result_object = await session.call_tool(
                 "run",
                 {
                     "deploymentSelector": deployment_selector,
@@ -64,12 +62,18 @@ async def run_convex_function(
                     "args": json.dumps(args),
                 },
             )
+            # dictify may raise ToolCallError
+            res = dictify_tool_call(result_object)
+            return res["result"]
+        except ToolCallError as e:
+            print(f"Tool call error: {e}")
+            raise e
         except Exception as e:
             print(f"Error running function {function_name}: {e}")
-            return None
+            raise e
 
 
-async def get_function_spec(deployment_info: InitResult) -> list[dict] | None:
+async def get_function_spec(deployment_info: InitResult, allowed_function_map: dict[str, str] = CONVEX_FUNCTION_MAP) -> list[dict] | None:
     async with (
         stdio_client(server_params) as (read, write),
         ClientSession(read, write) as session,
@@ -83,8 +87,13 @@ async def get_function_spec(deployment_info: InitResult) -> list[dict] | None:
             full_function_spec = json.loads(response_dict.content[0].text)
             function_spec = []
             for func in full_function_spec:
-                if func.get("identifier") in ALLOWED_FUNCTIONS:
-                    function_spec.append(func)
+                if func.get("identifier") in allowed_function_map:
+                    tool_dict = {
+                        "name": func["identifier"],
+                        "description": allowed_function_map[func["identifier"]],
+                        "inputSchema": func["args"],
+                    }
+                    function_spec.append(tool_dict)
             return function_spec
         except Exception as e:
             print(f"Error getting function specs: {e}")
@@ -122,26 +131,34 @@ async def get_graph_data(deployment_info: InitResult) -> list[dict] | None:
             await session.initialize()
             # Check for deployment info
             if not deployment_info["deploymentSelector"]:
-                WIP = True
                 knowledge_graph = await async_convex_api_call(
                     "graph", "GET", deployment_url=deployment_info["url"]
                 )
                 with open(Path(__file__).parent / "knowledge_graph-WIP.json", "w") as f:
                     json.dump(knowledge_graph, f)
                 return knowledge_graph
-            res = await run_convex_function(
+            return await run_convex_function(
                 deployment_info["deploymentSelector"], "knowledge:readGraph", {}
             )
-            return parse_convex_result(res)
         except Exception as e:
             print(f"Error getting graph data: {e}")
             return None
 
+async def main():
+    deployment_info = await initialize_mcp()
+    if deployment_info:
+        await print_tools()
+        function_spec = await get_function_spec(deployment_info)
+        print([func["identifier"] for func in function_spec])
+        # await get_graph_data(deployment_info)
+    else:
+        print("No deployment info found")
 
 if __name__ == "__main__":
+    asyncio.run(main())
+    exit()
     deployment_info = asyncio.run(initialize_mcp())
     if deployment_info:
-        list_tools()
         function_spec = asyncio.run(get_function_spec(deployment_info))
         print(function_spec)
     else:

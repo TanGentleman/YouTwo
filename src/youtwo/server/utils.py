@@ -5,7 +5,9 @@ from typing import Any, Dict, Optional
 import requests
 from mcp.types import CallToolResult
 
+from youtwo.exceptions import ToolCallError
 from youtwo.schemas import InitResult
+from youtwo.server.config import CONVEX_FUNCTION_MAP
 
 
 async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
@@ -23,15 +25,24 @@ async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
         print(f"Error parsing status: {e}")
     return None
 
+def dictify_tool_call(input: CallToolResult) -> dict:
+    """
+    Strips the tool call from the input.
+
+    Raises ToolCallError if the tool call is an error.
+    """
+    if input.isError:
+        raise ToolCallError(input.content[0].text)
+    return json.loads(input.content[0].text)
 
 def parse_convex_result(res: CallToolResult) -> Any | None:
     try:
-        p1 = json.loads(res.content[0].text)
-        if p1["isError"]:
-            raise ValueError(p1["error"])
-        p2 = p1["content"][0]["text"]
-        p3 = json.loads(p2)
-        return p3["result"]
+        full_dict = dictify_tool_call(res)
+        if full_dict["isError"]:
+            raise ValueError(full_dict["error"])
+        tool_results_str = full_dict["content"][0]["text"]
+        convex_result_dict = json.loads(tool_results_str)
+        return convex_result_dict["result"]
     except Exception as e:
         print(f"Error parsing convex result: {e}")
         return res
@@ -64,3 +75,9 @@ async def async_convex_api_call(
     except Exception as e:
         print(f"API call failed: {str(e)}")
         return None
+
+def get_function_description(function_name: str) -> str:
+    if function_name in CONVEX_FUNCTION_MAP:
+        return CONVEX_FUNCTION_MAP[function_name]
+    else:
+        raise ValueError(f"Unknown function: {function_name}")
