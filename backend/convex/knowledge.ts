@@ -63,6 +63,18 @@ export const internalDeleteKnowledge = async (ctx: MutationCtx, args: {
  */
 export const readGraph = internalQuery({
   args: {},
+  returns: v.object({
+    entities: v.array(v.object({
+      name: v.string(),
+      entityType: v.string(),
+      observations: v.array(v.string()),
+    })),
+    relations: v.array(v.object({
+      from: v.string(),
+      to: v.string(),
+      relationType: v.string(),
+    })),
+  }),
   handler: async (ctx) => {
     // Get all entities
     const entities = await ctx.db.query("entities").collect();
@@ -76,19 +88,14 @@ export const readGraph = internalQuery({
     
     return {
       entities: entities.map(entity => ({
-        id: entity._id,
         name: entity.name,
         entityType: entity.entityType,
         observations: entity.observations,
-        updatedAt: entity.updatedAt,
       })),
       relations: relations.map(relation => ({
-        id: relation._id,
-        from: entityMap.get(relation.from)?.name || relation.from,
-        to: entityMap.get(relation.to)?.name || relation.to,
+        from: entityMap.get(relation.from)?.name ?? relation.from,
+        to: entityMap.get(relation.to)?.name ?? relation.to,
         relationType: relation.relationType,
-        fromEntityId: relation.from,
-        toEntityId: relation.to,
       })),
     };
   },

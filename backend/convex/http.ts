@@ -97,11 +97,17 @@ http.route({
   path: "/graph",
   method: "GET",
   handler: httpAction(async (ctx) => {
-    const result = await ctx.runQuery(internal.knowledge.readGraph, {});
-    
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+      const result = await ctx.runQuery(internal.knowledge.readGraph, {});
+      return new Response(JSON.stringify(result), {
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Convex query failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
   }),
 });
 
