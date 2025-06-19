@@ -159,6 +159,7 @@ export const addObservations = internalMutation({
   },
   handler: async (ctx, args): Promise<EntityResult[]> => {
     const results: EntityResult[] = [];
+    let totalNewObservations = 0;
     
     for (const item of args.observations) {
       // Find the entity
@@ -181,7 +182,7 @@ export const addObservations = internalMutation({
           observations: Array.from(currentObservations),
           updatedAt: Date.now(),
         });
-        console.log(`Added ${newObservations.length} observations to ${item.entityName}`);
+        totalNewObservations += newObservations.length;
         results.push({
           success: true,
           name: item.entityName,
@@ -195,6 +196,7 @@ export const addObservations = internalMutation({
       }
     }
     
+    console.log(`Added ${totalNewObservations} total observations`);
     return results;
   },
 });
@@ -265,16 +267,19 @@ export const deleteEntities = internalMutation({
         }
       });
       relationsToDelete.push(...Array.from(relationsToDeleteById.values()));
-      console.log(`Marked ${relationsToDelete.length} relations to delete for entity ${name}`);
+      if (relationsToDelete.length !== 0) {
+        console.log(`Marked ${relationsToDelete.length} relations to delete for entity ${name}`);
+      }
 
       results.push({
         success: true,
         name,
       });
     }
-
-    console.log(`Deleting ${relationsToDelete.length} relations`);
-    await ctx.runMutation(internal.relations.deleteRelationsById, { relations: relationsToDelete });
+    if (relationsToDelete.length !== 0) {
+      console.log(`Deleting ${relationsToDelete.length} relations`);
+      await ctx.runMutation(internal.relations.deleteRelationsById, { relations: relationsToDelete });
+    }
     await internalDeleteEntities(ctx, { ids: entitiesToDelete });
     return results;
   },
