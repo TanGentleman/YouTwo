@@ -132,7 +132,11 @@ export const runTests = internalAction({
       
       // Test 8: Delete relations
       const deleteRelationsResult = await ctx.runMutation(internal.relations.deleteRelations, {
-        relations
+        relations: relations.map(r => ({
+          from: r.from,
+          to: r.to,
+          relationType: r.relationType
+        }))
       });
       
       const allRelationsDeleted = deleteRelationsResult.every(result => result.success);
