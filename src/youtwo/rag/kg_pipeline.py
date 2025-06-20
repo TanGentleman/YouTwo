@@ -50,11 +50,11 @@ async def fetch_knowledge_graph(from_frozen=True):
         json.dump(knowledge_graph, f)
     return knowledge_graph
 
+
 def prepare_graph_data(graph_data):
     """Convert Convex graph data to pipeline format"""
     entities = [
-        {"name": e["name"], "type": e["entityType"]}
-        for e in graph_data["entities"]
+        {"name": e["name"], "type": e["entityType"]} for e in graph_data["entities"]
     ]
 
     relations = [
@@ -155,7 +155,9 @@ def visualize_graph(graph) -> None:
     plt.show()
 
 
-def alternate_visualize_graph(entities: List[Dict[str, str]], relations: List[Tuple[str, str, str]]) -> None:
+def alternate_visualize_graph(
+    entities: List[Dict[str, str]], relations: List[Tuple[str, str, str]]
+) -> None:
     """Visualize the knowledge graph using Graphviz"""
     try:
         from graphviz import Digraph

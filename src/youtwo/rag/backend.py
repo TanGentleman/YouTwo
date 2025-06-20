@@ -131,6 +131,7 @@ def process_document_batch(doc_ids: List[str], folder_path: str) -> List[ConvexS
 
     return processed_sources
 
+
 def setup_logging(debug: bool = False) -> None:
     """Configure logging based on debug flag"""
     logging.basicConfig(
@@ -142,6 +143,7 @@ def setup_logging(debug: bool = False) -> None:
 def main_from_cli() -> bool:
     """Process command line arguments and run the appropriate function"""
     from youtwo.rag.pipelines import sync_vectara_to_convex
+
     parser = argparse.ArgumentParser(
         description="Process documents and send chunks to Convex"
     )

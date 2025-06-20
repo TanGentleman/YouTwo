@@ -24,6 +24,7 @@ async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
         print(f"Error parsing status: {e}")
     return None
 
+
 def dictify_tool_call(input: CallToolResult) -> dict:
     """
     Strips the tool call from the input.
@@ -33,6 +34,7 @@ def dictify_tool_call(input: CallToolResult) -> dict:
     if input.isError:
         raise ToolCallError(input.content[0].text)
     return json.loads(input.content[0].text)
+
 
 def parse_convex_result(res: CallToolResult) -> Any | None:
     try:
@@ -46,15 +48,18 @@ def parse_convex_result(res: CallToolResult) -> Any | None:
         print(f"Error parsing convex result: {e}")
         return res
 
+
 def get_convex_url(force_load_dotenv: bool = False) -> str:
     if force_load_dotenv:
         from dotenv import load_dotenv
+
         load_dotenv()
     convex_url = os.getenv("CONVEX_URL")
     if not convex_url:
         raise ValueError("CONVEX_URL environment variable not set")
     deployment_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}"
     return deployment_url
+
 
 # API handling functions
 async def async_convex_api_call(

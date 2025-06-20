@@ -81,24 +81,29 @@ class BriefEntity(TypedDict):
     name: str
     entityType: str
 
+
 class Observation(TypedDict):
     entityName: str
     contents: list[str]
+
 
 class BriefRelation(TypedDict):
     source: str
     relationType: str
     target: str
 
+
 class ConvexFunctionSpec(TypedDict):
     convex_identifier: str
     function_args: dict
     description: str
 
+
 class BriefFunction(TypedDict):
     convex_identifier: str
     description: str
     tool_name: str
+
 
 class InitResult(TypedDict):
     deploymentSelector: str

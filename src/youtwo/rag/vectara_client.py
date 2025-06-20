@@ -17,12 +17,15 @@ logger = logging.getLogger(__name__)
 
 class VectaraAPIError(Exception):
     """Custom exception for Vectara API errors."""
+
     pass
+
 
 class UploadFileInputSchema(TypedDict):
     file: bytes
     filename: str
     metadata: dict
+
 
 class MetadataFilter:
     """
@@ -61,10 +64,10 @@ class MetadataFilter:
 def is_allowed_filetype(suffix: str) -> bool:
     """
     Check if the file type is allowed for upload to Vectara.
-    
+
     Args:
         suffix (str): The file extension including the dot (e.g., '.pdf')
-        
+
     Returns:
         bool: True if the file type is allowed, False otherwise
     """
@@ -116,7 +119,7 @@ def process_upload_response(response_json: dict) -> UploadResult:
 class VectaraClient:
     """
     Client for interacting with Vectara API.
-    
+
     This class provides methods for all Vectara operations including:
     - Uploading files
     - Retrieving chunks based on queries
@@ -127,7 +130,7 @@ class VectaraClient:
     def __init__(self, corpus_key: str = None, api_key: str = None):
         """
         Initialize the VectaraClient.
-        
+
         Args:
             corpus_key (str, optional): The Vectara corpus key. If not provided, looks for VECTARA_CORPUS_KEY env var.
             api_key (str, optional): The Vectara API key. If not provided, looks for VECTARA_API_KEY env var.
@@ -137,6 +140,7 @@ class VectaraClient:
         # Load environment variables if needed
         if api_key is None:
             from dotenv import load_dotenv
+
             load_dotenv()
             api_key = os.getenv("VECTARA_API_KEY")
 
@@ -197,7 +201,6 @@ class VectaraClient:
             raise VectaraAPIError(
                 f"An unexpected error occurred during Vectara API call: {e}"
             ) from e
-
 
     def upload_file(self, file_bytes: bytes, filename: str) -> UploadResult:
         """
@@ -350,10 +353,10 @@ class VectaraClient:
     def get_filenames(self, limit: int = 50) -> List[str]:
         """
         Retrieves the filenames of all documents in the Vectara corpus.
-        
+
         Args:
             limit (int): Maximum number of documents to return.
-            
+
         Returns:
             List[str]: List of document IDs.
         """
@@ -379,15 +382,13 @@ class VectaraClient:
 
         endpoint = f"corpora/{self.corpus_key}/documents/{encoded_document_id}"
 
-        headers = {
-            "Request-Timeout": "20",
-            "Request-Timeout-Millis": "60000"
-        }
+        headers = {"Request-Timeout": "20", "Request-Timeout-Millis": "60000"}
 
         try:
             return self._make_api_call("GET", endpoint, headers=headers)
         except VectaraAPIError as e:
             raise VectaraAPIError(f"Error fetching document from Vectara: {e}") from e
+
 
 if __name__ == "__main__":
     client = VectaraClient()

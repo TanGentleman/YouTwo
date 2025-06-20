@@ -15,6 +15,7 @@ server_params = StdioServerParameters(
     command="npx", args=["-y", "convex@latest", "mcp", "start"], env=None
 )
 
+
 def print_tool_info(tools: list[Tool]):
     for tool in tools:
         print(
@@ -28,7 +29,9 @@ async def print_tools() -> None:
         ClientSession(read, write) as session,
     ):
         await session.initialize()
-        tools = [t for t in (await session.list_tools()).tools if t.name in ALLOWED_TOOLS]
+        tools = [
+            t for t in (await session.list_tools()).tools if t.name in ALLOWED_TOOLS
+        ]
         print_tool_info(tools)
 
 
@@ -73,7 +76,10 @@ async def run_convex_function(
             raise e
 
 
-async def get_function_spec(deployment_info: InitResult, allowed_function_map: dict[str, BriefFunction] = KG_BY_IDENTIFIER) -> list[ConvexFunctionSpec] | None:
+async def get_function_spec(
+    deployment_info: InitResult,
+    allowed_function_map: dict[str, BriefFunction] = KG_BY_IDENTIFIER,
+) -> list[ConvexFunctionSpec] | None:
     async with (
         stdio_client(server_params) as (read, write),
         ClientSession(read, write) as session,
@@ -146,6 +152,7 @@ async def get_graph_data(deployment_info: InitResult) -> list[dict] | None:
             print(f"Error getting graph data: {e}")
             return None
 
+
 async def main():
     deployment_info = await initialize_mcp()
     if deployment_info:
@@ -155,6 +162,7 @@ async def main():
         # await get_graph_data(deployment_info)
     else:
         print("No deployment info found")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

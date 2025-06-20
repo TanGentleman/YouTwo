@@ -3,14 +3,21 @@ import logging
 from pathlib import Path
 
 import gradio as gr
+from smolagents import (
+    ActionStep,
+    ChatMessageStreamDelta,
+    FinalAnswerStep,
+    PlanningStep,
+    RunResult,
+)
 
 from youtwo.agents.agent import kg_management_agent as agent
-from youtwo.agents.prompts import KG_MANAGEMENT_TASK, KG_MANAGEMENT_PROMPT
+from youtwo.agents.prompts import KG_MANAGEMENT_PROMPT, KG_MANAGEMENT_TASK
 from youtwo.memory.visualize import visualize_knowledge_graph
 from youtwo.paths import DATA_DIR
 from youtwo.rag.vectara_client import VectaraClient, is_allowed_filetype
 from youtwo.server.config import USER_DEFAULT_MESSAGE
-from smolagents import ActionStep, FinalAnswerStep, PlanningStep, RunResult, ChatMessageStreamDelta
+
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------
@@ -39,7 +46,9 @@ def agent_chat(message: str, chat_history):
         return chat_history, ""
 
     # Append user message to history
-    context_str = "\n\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history[:2]])
+    context_str = "\n\n".join(
+        [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history[:2]]
+    )
     chat_history.append({"role": "user", "content": message})
     task = KG_MANAGEMENT_TASK.format(context=context_str, user_input=message)
 
@@ -78,7 +87,7 @@ def agent_chat(message: str, chat_history):
         response = steps[-1] or stream_response_string
     else:
         response = agent.run(task)
-    
+
     if isinstance(response, dict):
         parsed_response = (
             response.get("output") or response.get("answer") or str(response)
@@ -122,26 +131,33 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
 
     return f"Uploaded document: {upload_result['id']}"
 
+
 # Add visualize button handler
 def handle_visualize():
     try:
         # Run the async function
         visualization_path, data_path = asyncio.run(visualize_knowledge_graph())
-        
+
         result_msg = f"✅ Knowledge graph visualization generated successfully!\nVisualization saved to: {visualization_path}"
         if data_path:
             result_msg += f"\nData saved to: {data_path}"
-        
+
         return gr.update(value=result_msg, visible=True)
     except Exception as e:
-        return gr.update(value=f"❌ Error generating visualization: {str(e)}", visible=True)
+        return gr.update(
+            value=f"❌ Error generating visualization: {str(e)}", visible=True
+        )
+
 
 def handle_load_graph():
     # read the image from DATA_DIR / knowledge_graph.png
     graph_image_file = DATA_DIR / "knowledge_graph.png"
     if not graph_image_file.exists():
         return gr.update(value="❌ Error loading graph image", visible=True), None
-    return gr.update(value="✅ Graph Image Loaded", visible=True), gr.Image(value=graph_image_file, visible=True)
+    return gr.update(value="✅ Graph Image Loaded", visible=True), gr.Image(
+        value=graph_image_file, visible=True
+    )
+
 
 # ---------------------------
 # Gradio UI (Blocks API)
@@ -149,29 +165,29 @@ def handle_load_graph():
 
 
 def get_gradio_blocks():
-    with gr.Blocks(title="YouTwo Memory Agent Interface", analytics_enabled=False) as demo:
+    with gr.Blocks(
+        title="YouTwo Memory Agent Interface", analytics_enabled=False
+    ) as demo:
         gr.Markdown(
             "## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration"
         )
         with gr.Tab("🔍 Visualize"):
             gr.Markdown("Visualize the knowledge graph")
-            
+
             visualize_btn = gr.Button("🔍 Generate Image", variant="primary")
             visualization_output = gr.Textbox(
-                label="Image Status",
-                visible=False,
-                interactive=False
+                label="Image Status", visible=False, interactive=False
             )
-            
+
             graph_image = gr.Image(
                 label="Knowledge Graph",
                 type="filepath",
                 height=700,
                 show_download_button=True,
                 show_fullscreen_button=True,
-                interactive=False
+                interactive=False,
             )
-            
+
             # Wire up the visualize button
             visualize_btn.click(
                 fn=handle_load_graph,
@@ -194,9 +210,7 @@ def get_gradio_blocks():
                 ],
             )
             visualization_output = gr.Textbox(
-                label="Visualization Status",
-                visible=False,
-                interactive=False
+                label="Visualization Status", visible=False, interactive=False
             )
             with gr.Row():
                 user_input = gr.Textbox(
@@ -224,8 +238,7 @@ def get_gradio_blocks():
                 outputs=[chatbot, user_input],
                 # outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
             )
-            
-            
+
             visualize_btn.click(
                 fn=handle_visualize,
                 outputs=[visualization_output],

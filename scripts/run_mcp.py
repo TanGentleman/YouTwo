@@ -21,10 +21,14 @@ MCP_KEY = deployment_info["deploymentSelector"]
 
 def correct_relation_format(relations: list[BriefRelation]) -> list[BriefRelation]:
     return [
-        {"from": relation["source"],
-         "relationType": relation["relationType"],
-         "to": relation["target"]}
-        for relation in relations]
+        {
+            "from": relation["source"],
+            "relationType": relation["relationType"],
+            "to": relation["target"],
+        }
+        for relation in relations
+    ]
+
 
 @app.tool()
 async def get_entities() -> list[BriefEntity]:
@@ -65,6 +69,7 @@ async def create_relations(relations: list[BriefRelation]) -> Any:
         MCP_KEY, "relations:createRelations", {"relations": relations}
     )
 
+
 @app.tool()
 async def delete_relations(relations: list[BriefRelation]) -> Any:
     """
@@ -75,6 +80,7 @@ async def delete_relations(relations: list[BriefRelation]) -> Any:
         MCP_KEY, "relations:deleteRelations", {"relations": relations}
     )
 
+
 @app.tool()
 async def add_observations(observations: list[Observation]) -> Any:
     """
@@ -84,6 +90,7 @@ async def add_observations(observations: list[Observation]) -> Any:
         MCP_KEY, "entities:addObservations", {"observations": observations}
     )
 
+
 @app.tool()
 async def delete_observations(observations: list[Observation]) -> Any:
     """
@@ -92,6 +99,7 @@ async def delete_observations(observations: list[Observation]) -> Any:
     return await run_convex_function(
         MCP_KEY, "entities:deleteObservations", {"observations": observations}
     )
+
 
 @app.tool()
 async def get_graph() -> Any:
@@ -107,6 +115,7 @@ async def get_tools() -> list[types.Tool]:
     Get a list of available tools and their specifications.
     """
     return await get_function_spec(deployment_info)
+
 
 # @app.call_tool()
 # async def call_tool(

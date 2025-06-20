@@ -7,13 +7,14 @@ from youtwo.agents.tools import (
     add_observations,
     create_entities,
     create_relations,
-    delete_observations,
-    get_entities,
     delete_entities,
     delete_relations,
+    get_entities,
     get_graph,
     inspect_database_tool,
-    retrieve_tool, visualize_custom_graph, visualize_live_graph)
+    retrieve_tool,
+    visualize_custom_graph,
+)
 
 DEFAULT_MODEL = "deepseek-ai/DeepSeek-V3-0324"
 REASONING_MODEL = "deepseek-ai/DeepSeek-R1-0528"

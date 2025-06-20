@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Union
 
 try:
     from graphviz import Digraph
+
     GRAPHVIZ_AVAILABLE = True
 except ImportError:
     Digraph = None
@@ -29,13 +30,16 @@ logger = logging.getLogger(__name__)
 # Exceptions and Enums
 # =============================================================================
 
+
 class GraphVisualizationError(Exception):
     """Exception raised when graph visualization fails."""
+
     pass
 
 
 class OutputFormat(str, Enum):
     """Supported output formats for graph visualization."""
+
     PNG = "png"
     SVG = "svg"
     PDF = "pdf"
@@ -45,13 +49,15 @@ class OutputFormat(str, Enum):
 # Data Models
 # =============================================================================
 
+
 @dataclass
 class Entity:
     """Data model for a knowledge graph entity."""
+
     name: str
     entityType: str
     properties: Dict[str, any] = None
-    
+
     def __post_init__(self):
         if self.properties is None:
             self.properties = {}
@@ -60,11 +66,12 @@ class Entity:
 @dataclass
 class Relation:
     """Data model for a knowledge graph relation."""
+
     source: str
     target: str
     relationType: str
     properties: Dict[str, any] = None
-    
+
     def __post_init__(self):
         if self.properties is None:
             self.properties = {}
@@ -73,13 +80,14 @@ class Relation:
 @dataclass
 class GraphData:
     """Data model for complete graph data with convenience methods."""
+
     entities: List[Entity]
     relations: List[Relation]
-    
+
     @classmethod
     def from_dict(cls, data: Dict) -> "GraphData":
         """Create GraphData from dictionary representation.
-        
+
         Supports both 'from'/'to' and 'source'/'target' keys for relations.
         """
         entities = []
@@ -87,60 +95,63 @@ class GraphData:
             entity = Entity(
                 name=entity_data.get("name", ""),
                 entityType=entity_data.get("entityType", ""),
-                properties=entity_data.get("properties", {})
+                properties=entity_data.get("properties", {}),
             )
             entities.append(entity)
-        
+
         relations = []
         for rel in data.get("relations", []):
             source = rel.get("from") or rel.get("source")
             target = rel.get("to") or rel.get("target")
             relation_type = rel.get("relationType")
-            
+
             if all([source, target, relation_type]):
-                relations.append(Relation(
-                    source=source,
-                    target=target,
-                    relationType=relation_type,
-                    properties=rel.get("properties", {})
-                ))
-        
+                relations.append(
+                    Relation(
+                        source=source,
+                        target=target,
+                        relationType=relation_type,
+                        properties=rel.get("properties", {}),
+                    )
+                )
+
         return cls(entities=entities, relations=relations)
-    
+
     def to_dict(self) -> Dict:
         """Convert GraphData to dictionary representation."""
         return {
             "entities": [asdict(entity) for entity in self.entities],
-            "relations": [asdict(relation) for relation in self.relations]
+            "relations": [asdict(relation) for relation in self.relations],
         }
-    
+
     def filter(self, max_nodes: int = None, max_edges: int = None) -> "GraphData":
         """Return a filtered copy of the graph data."""
         entities = self.entities[:max_nodes] if max_nodes else self.entities
         entity_names = {entity.name for entity in entities}
-        
+
         relations = self.relations[:max_edges] if max_edges else self.relations
-        
+
         # Only include relations between existing entities
         relations = [
-            rel for rel in relations
+            rel
+            for rel in relations
             if rel.source in entity_names and rel.target in entity_names
         ]
-        
+
         return GraphData(entities=entities, relations=relations)
-    
+
     def save(self, file_path: Union[str, Path]) -> Path:
         """Save graph data to JSON file."""
-        file_path = Path(file_path).with_suffix('.json')
-        with open(file_path, 'w', encoding='utf-8') as f:
+        file_path = Path(file_path).with_suffix(".json")
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
         return file_path
-    
+
     @classmethod
     def load(cls, file_path: Union[str, Path]) -> "GraphData":
         """Load graph data from JSON file."""
-        file_path = Path(file_path).with_suffix('.json')
-        with open(file_path, 'r', encoding='utf-8') as f:
+        file_path = Path(file_path).with_suffix(".json")
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
 
@@ -148,40 +159,41 @@ class GraphData:
 @dataclass
 class VisualizationConfig:
     """Configuration for graph visualization styling and layout."""
+
     # Layout settings
     rankdir: str = "TB"  # Top to Bottom
     size: str = "12,8"
     dpi: str = "300"
-    
+
     # Node styling
     node_shape: str = "ellipse"
     node_style: str = "filled"
-    
+
     # Entity type colors
     entity_type_colors: Dict[str, str] = None
-    
+
     def __post_init__(self):
         if self.entity_type_colors is None:
             self.entity_type_colors = {
                 "person": "lightblue",
-                "organization": "lightgreen", 
+                "organization": "lightgreen",
                 "location": "lightyellow",
                 "concept": "lightpink",
                 "event": "lightcoral",
-                "default": "lightgray"
+                "default": "lightgray",
             }
-    
+
     def get_entity_color(self, entity_type: str) -> str:
         """Get color for entity type with fallback to default."""
         return self.entity_type_colors.get(
-            entity_type.lower(), 
-            self.entity_type_colors["default"]
+            entity_type.lower(), self.entity_type_colors["default"]
         )
 
 
 # =============================================================================
 # Data Connectors
 # =============================================================================
+
 
 class DataConnector(ABC):
     """Abstract base class for data connectors."""
@@ -219,7 +231,9 @@ class JSONFileConnector(DataConnector):
                 data = json.load(f)
             return GraphData.from_dict(data)
         except Exception as e:
-            raise GraphVisualizationError(f"Failed to load JSON file {self.file_path}: {e}")
+            raise GraphVisualizationError(
+                f"Failed to load JSON file {self.file_path}: {e}"
+            )
 
 
 class DictionaryConnector(DataConnector):
@@ -240,15 +254,18 @@ class DictionaryConnector(DataConnector):
 # Main Visualizer Class
 # =============================================================================
 
+
 class KnowledgeGraphVisualizer:
     """Main class for visualizing knowledge graphs with various data sources."""
 
-    def __init__(self, connector: DataConnector, config: Optional[VisualizationConfig] = None):
+    def __init__(
+        self, connector: DataConnector, config: Optional[VisualizationConfig] = None
+    ):
         if not GRAPHVIZ_AVAILABLE:
             raise GraphVisualizationError(
                 "graphviz is not installed. Install with 'pip install graphviz'"
             )
-        
+
         self.connector = connector
         self.config = config or VisualizationConfig()
         self._graph_data: Optional[GraphData] = None
@@ -260,33 +277,37 @@ class KnowledgeGraphVisualizer:
         return self._graph_data
 
     def batch_update_properties(
-        self, 
-        entity_updates: Dict[str, Dict] = None, 
-        relation_updates: List[tuple] = None
+        self,
+        entity_updates: Dict[str, Dict] = None,
+        relation_updates: List[tuple] = None,
     ) -> None:
         """Batch update entity and relation properties efficiently.
-        
+
         Args:
             entity_updates: Dict mapping entity names to property updates
             relation_updates: List of (source, target, relation_type, properties) tuples
         """
         if self._graph_data is None:
-            raise GraphVisualizationError("Graph data not loaded. Call load_graph_data() first.")
-        
+            raise GraphVisualizationError(
+                "Graph data not loaded. Call load_graph_data() first."
+            )
+
         # Update entity properties
         if entity_updates:
             entity_lookup = {e.name: e for e in self._graph_data.entities}
             for entity_name, properties in entity_updates.items():
                 if entity_name in entity_lookup:
                     entity_lookup[entity_name].properties.update(properties)
-        
+
         # Update relation properties
         if relation_updates:
             for source, target, relation_type, properties in relation_updates:
                 for relation in self._graph_data.relations:
-                    if (relation.source == source and 
-                        relation.target == target and 
-                        relation.relationType == relation_type):
+                    if (
+                        relation.source == source
+                        and relation.target == target
+                        and relation.relationType == relation_type
+                    ):
                         relation.properties.update(properties)
 
     async def visualize(
@@ -297,35 +318,35 @@ class KnowledgeGraphVisualizer:
         output_dir: Optional[Union[str, Path]] = None,
         view_output: bool = True,
         format: OutputFormat = OutputFormat.PNG,
-        save_data: bool = False
+        save_data: bool = False,
     ) -> tuple[Path, Optional[Path]]:
         """Visualize the knowledge graph with optional filtering and saving.
-        
+
         Returns:
             Tuple of (visualization_path, data_path) where data_path is None if save_data=False
         """
         try:
             graph_data = await self.load_graph_data()
-            
+
             # Filter data if limits specified
             graph_data = graph_data.filter(max_nodes=max_nodes, max_edges=max_edges)
-            
+
             output_path = self._render_graph(
-                graph_data.entities, 
-                graph_data.relations, 
+                graph_data.entities,
+                graph_data.relations,
                 output_filename,
-                output_dir or DATA_DIR, 
-                view_output, 
-                format.value
+                output_dir or DATA_DIR,
+                view_output,
+                format.value,
             )
-            
+
             # Save filtered data if requested
             data_path = None
             if save_data:
                 data_path = graph_data.save(
                     Path(output_dir or DATA_DIR) / f"{output_filename}_data"
                 )
-            
+
             logger.info(
                 f"Visualized {len(graph_data.entities)} nodes and "
                 f"{len(graph_data.relations)} edges"
@@ -342,23 +363,19 @@ class KnowledgeGraphVisualizer:
         output_filename: str,
         output_dir: Path,
         view_output: bool,
-        format: str
+        format: str,
     ) -> Path:
         """Render the graph using Graphviz."""
         dot = Digraph(comment="Knowledge Graph", format=format)
-        
+
         # Set graph attributes
         dot.attr(
-            rankdir=self.config.rankdir,
-            size=self.config.size,
-            dpi=self.config.dpi
+            rankdir=self.config.rankdir, size=self.config.size, dpi=self.config.dpi
         )
-        
+
         # Set default node attributes
-        dot.attr('node', 
-                shape=self.config.node_shape, 
-                style=self.config.node_style)
-        
+        dot.attr("node", shape=self.config.node_shape, style=self.config.node_style)
+
         # Add nodes with type-based coloring
         for entity in entities:
             color = self.config.get_entity_color(entity.entityType)
@@ -371,10 +388,7 @@ class KnowledgeGraphVisualizer:
         # Render to file
         try:
             output_path = dot.render(
-                output_filename,
-                directory=output_dir,
-                view=view_output,
-                cleanup=True
+                output_filename, directory=output_dir, view=view_output, cleanup=True
             )
             return Path(output_path)
         except Exception as e:
@@ -391,6 +405,7 @@ class KnowledgeGraphVisualizer:
 # Convenience Functions
 # =============================================================================
 
+
 async def visualize_knowledge_graph(
     max_nodes: int = 100,
     max_edges: int = 200,
@@ -399,10 +414,10 @@ async def visualize_knowledge_graph(
     view_output: bool = True,
     format: OutputFormat = OutputFormat.PNG,
     save_data: bool = False,
-    config: Optional[VisualizationConfig] = None
+    config: Optional[VisualizationConfig] = None,
 ) -> tuple[Path, Optional[Path]]:
     """Visualize knowledge graph from Convex API.
-    
+
     This is the main function for visualizing data from the Convex backend.
     """
     connector = ConvexConnector()
@@ -414,7 +429,7 @@ async def visualize_knowledge_graph(
         output_dir=output_dir,
         view_output=view_output,
         format=format,
-        save_data=save_data
+        save_data=save_data,
     )
 
 
@@ -427,10 +442,10 @@ async def visualize_from_json(
     view_output: bool = True,
     format: OutputFormat = OutputFormat.PNG,
     save_data: bool = False,
-    config: Optional[VisualizationConfig] = None
+    config: Optional[VisualizationConfig] = None,
 ) -> tuple[Path, Optional[Path]]:
     """Visualize knowledge graph from JSON file.
-    
+
     Args:
         json_path: Path to JSON file containing graph data
         Other args: Same as visualize_knowledge_graph()
@@ -444,7 +459,7 @@ async def visualize_from_json(
         output_dir=output_dir,
         view_output=view_output,
         format=format,
-        save_data=save_data
+        save_data=save_data,
     )
 
 
@@ -457,13 +472,13 @@ async def visualize_from_dict(
     view_output: bool = True,
     format: OutputFormat = OutputFormat.PNG,
     save_data: bool = False,
-    config: Optional[VisualizationConfig] = None
+    config: Optional[VisualizationConfig] = None,
 ) -> tuple[Path, Optional[Path]]:
     """Visualize knowledge graph from Python dictionary.
-    
+
     This is the easiest way to visualize a graph from code. Simply pass a dictionary
     with 'entities' and 'relations' keys.
-    
+
     Example:
         graph_data = {
             "entities": [
@@ -476,9 +491,9 @@ async def visualize_from_dict(
                 {"source": "Alice", "target": "ACME Corp", "relationType": "works_at"}
             ]
         }
-        
+
         output_path, data_path = await visualize_from_dict(graph_data)
-    
+
     Args:
         graph_dict: Dictionary containing entities and relations
         Other args: Same as visualize_knowledge_graph()
@@ -492,5 +507,5 @@ async def visualize_from_dict(
         output_dir=output_dir,
         view_output=view_output,
         format=format,
-        save_data=save_data
+        save_data=save_data,
     )
