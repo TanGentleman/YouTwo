@@ -184,7 +184,7 @@ class VectaraClient:
             headers["Content-Type"] = "application/json"
 
         try:
-            response = requests.request(method, url, headers=headers, **kwargs)
+            response = requests.request(method, url, headers=headers, timeout=20, **kwargs)
             response.raise_for_status()
             if response.status_code == 204:
                 return {}
@@ -324,13 +324,12 @@ class VectaraClient:
         # Validate inputs
         if not 1 <= limit <= 100:
             raise ValueError("Limit must be between 1 and 100")
+        CORPUS_KEY_MAX_LENGTH = 50
 
-        if len(self.corpus_key) > 50 or not all(
+        if len(self.corpus_key) > CORPUS_KEY_MAX_LENGTH or not all(
             c.isalnum() or c in ["_", "=", "-"] for c in self.corpus_key
         ):
-            raise ValueError(
-                "corpus_key must be <= 50 characters and match regex [a-zA-Z0-9_\\=\\-]+$"
-            )
+            raise ValueError(f"corpus_key must be <= {CORPUS_KEY_MAX_LENGTH} characters and match regex [a-zA-Z0-9_\\=\\-]+$")
 
         endpoint = f"corpora/{self.corpus_key}/documents"
 
@@ -393,13 +392,10 @@ class VectaraClient:
 if __name__ == "__main__":
     client = VectaraClient()
     filenames = client.get_filenames(limit=1)
-    if not filenames:
-        print("No documents found")
-        exit()
-
-    first_file = filenames[0]
-    metadata_filter = MetadataFilter().by_doc_id(first_file).build()
-    print("Testing metadata_filter:", metadata_filter)
-    docs = client.get_corpus_info(limit=1, metadata_filter=metadata_filter)
-    assert first_file == docs[0]["id"]
-    print("Success!")
+    if filenames:
+        first_file = filenames[0]
+        metadata_filter = MetadataFilter().by_doc_id(first_file).build()
+        print("Testing metadata_filter:", metadata_filter)
+        docs = client.get_corpus_info(limit=1, metadata_filter=metadata_filter)
+        assert first_file == docs[0]["id"]
+        print("Success!")

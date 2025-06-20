@@ -32,7 +32,7 @@ def make_convex_api_call(
         assert convex_url.endswith(".site"), "Convex HTTP api base must end with .site"
         url = f"{convex_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, headers={"Content-Type": "application/json"}
+            method, url, json=data or {}, headers={"Content-Type": "application/json"}, timeout=20
         )
         response.raise_for_status()
         return response.json()

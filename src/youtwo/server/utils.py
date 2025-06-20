@@ -9,11 +9,11 @@ from youtwo.exceptions import ToolCallError
 from youtwo.schemas import InitResult
 
 
-async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
-    if not statusOutput.content:
+async def parse_status(status_output: CallToolResult) -> InitResult | None:
+    if not status_output.content:
         return None
     try:
-        data = json.loads(statusOutput.content[0].text)
+        data = json.loads(status_output.content[0].text)
         for dep in data.get("availableDeployments", []):
             if dep.get("kind") == "ownDev":
                 return {
@@ -72,12 +72,11 @@ async def async_convex_api_call(
         convex_url = deployment_url
     deployment_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}"
     try:
-        assert deployment_url.endswith(".site"), (
-            "Convex HTTP api base must end with .site"
-        )
+        if not deployment_url.endswith(".site"):
+            raise ValueError("Convex HTTP api base must end with .site")
         url = f"{deployment_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, headers={"Content-Type": "application/json"}
+            method, url, json=data or {}, headers={"Content-Type": "application/json"}, timeout=20
         )
         response.raise_for_status()
         return response.json()

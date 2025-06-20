@@ -35,15 +35,15 @@ async def print_tools() -> None:
         print_tool_info(tools)
 
 
-def check_convex_project(projectDir: str) -> bool:
-    if not Path(projectDir).is_dir():
-        print(f"Directory does not exist: {projectDir}")
+def check_convex_project(project_dir: str) -> bool:
+    if not Path(project_dir).is_dir():
+        print(f"Directory does not exist: {project_dir}")
         return False
-    files = Path(projectDir).iterdir()
+    files = Path(project_dir).iterdir()
     has_pkg = "package.json" in files
-    has_convex = "convex" in files and Path(projectDir, "convex").is_dir()
+    has_convex = "convex" in files and Path(project_dir, "convex").is_dir()
     print(
-        f"Project dir: {projectDir}\nHas package.json: {has_pkg}\nHas convex/: {has_convex}"
+        f"Project dir: {project_dir}\nHas package.json: {has_pkg}\nHas convex/: {has_convex}"
     )
     return has_pkg and has_convex
 
@@ -166,10 +166,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    exit()
-    deployment_info = asyncio.run(initialize_mcp())
-    if deployment_info:
-        function_spec = asyncio.run(get_function_spec(deployment_info))
-        print(function_spec)
-    else:
-        print("No deployment info found")
