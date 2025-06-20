@@ -14,6 +14,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from typing_extensions import TypedDict
 
+from youtwo.paths import DATA_DIR
 from youtwo.server.utils import async_convex_api_call
 
 
@@ -44,7 +45,8 @@ async def fetch_knowledge_graph(from_frozen=True):
         except FileNotFoundError:
             print("Knowledge graph file not found. Fetching from Convex...")
     knowledge_graph = await async_convex_api_call("graph", "GET")
-    with open(f"knowledge_graph-{date_str}.json", "w") as f:
+    filepath = DATA_DIR / f"knowledge_graph-{date_str}.json"
+    with open(filepath, "w") as f:
         json.dump(knowledge_graph, f)
     return knowledge_graph
 

@@ -1,6 +1,11 @@
-import os
 import logging
-from youtwo.rag.backend import get_source_filenames_from_convex, process_document_batch, upload_sources_to_convex
+import os
+
+from youtwo.rag.backend import (
+    get_source_filenames_from_convex,
+    process_document_batch,
+    upload_sources_to_convex,
+)
 from youtwo.rag.vectara_client import VectaraClient
 
 logger = logging.getLogger(__name__)

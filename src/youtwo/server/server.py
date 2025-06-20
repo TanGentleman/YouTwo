@@ -7,8 +7,8 @@ from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.stdio import stdio_client
 
 from youtwo.exceptions import ToolCallError
-from youtwo.schemas import InitResult
-from youtwo.server.config import ALLOWED_TOOLS, CONVEX_FUNCTION_MAP, CONVEX_PROJECT_DIR
+from youtwo.schemas import BriefFunction, ConvexFunctionSpec, InitResult
+from youtwo.server.config import ALLOWED_TOOLS, CONVEX_PROJECT_DIR, KG_BY_IDENTIFIER
 from youtwo.server.utils import async_convex_api_call, dictify_tool_call, parse_status
 
 server_params = StdioServerParameters(
@@ -73,7 +73,7 @@ async def run_convex_function(
             raise e
 
 
-async def get_function_spec(deployment_info: InitResult, allowed_function_map: dict[str, str] = CONVEX_FUNCTION_MAP) -> list[dict] | None:
+async def get_function_spec(deployment_info: InitResult, allowed_function_map: dict[str, BriefFunction] = KG_BY_IDENTIFIER) -> list[ConvexFunctionSpec] | None:
     async with (
         stdio_client(server_params) as (read, write),
         ClientSession(read, write) as session,
@@ -84,14 +84,16 @@ async def get_function_spec(deployment_info: InitResult, allowed_function_map: d
                 "functionSpec",
                 {"deploymentSelector": deployment_info["deploymentSelector"]},
             )
-            full_function_spec = json.loads(response_dict.content[0].text)
+            full_function_spec = dictify_tool_call(response_dict)
             function_spec = []
             for func in full_function_spec:
-                if func.get("identifier") in allowed_function_map:
+                val = allowed_function_map.get(func.get("identifier"))
+                if val:
                     tool_dict = {
-                        "name": func["identifier"],
-                        "description": allowed_function_map[func["identifier"]],
-                        "inputSchema": func["args"],
+                        "identifier": func["identifier"],
+                        "function_args": func["args"],
+                        "tool_name": val["tool_name"],
+                        "description": val["description"],
                     }
                     function_spec.append(tool_dict)
             return function_spec
