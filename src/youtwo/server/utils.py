@@ -7,7 +7,6 @@ from mcp.types import CallToolResult
 
 from youtwo.exceptions import ToolCallError
 from youtwo.schemas import InitResult
-from youtwo.server.config import CONVEX_FUNCTION_MAP
 
 
 async def parse_status(statusOutput: CallToolResult) -> InitResult | None:
@@ -47,6 +46,15 @@ def parse_convex_result(res: CallToolResult) -> Any | None:
         print(f"Error parsing convex result: {e}")
         return res
 
+def get_convex_url(force_load_dotenv: bool = False) -> str:
+    if force_load_dotenv:
+        from dotenv import load_dotenv
+        load_dotenv()
+    convex_url = os.getenv("CONVEX_URL")
+    if not convex_url:
+        raise ValueError("CONVEX_URL environment variable not set")
+    deployment_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}"
+    return deployment_url
 
 # API handling functions
 async def async_convex_api_call(
@@ -54,11 +62,7 @@ async def async_convex_api_call(
 ) -> Optional[Dict[str, Any]]:
     """Make request to Convex API"""
     if deployment_url is None:
-        # from dotenv import load_dotenv
-        # load_dotenv()
-        convex_url = os.getenv("CONVEX_URL")
-        if not convex_url:
-            raise ValueError("CONVEX_URL environment variable not set")
+        convex_url = get_convex_url()
     else:
         convex_url = deployment_url
     deployment_url = f"{convex_url.replace('convex.cloud', 'convex.site').rstrip('/')}"
@@ -75,9 +79,3 @@ async def async_convex_api_call(
     except Exception as e:
         print(f"API call failed: {str(e)}")
         return None
-
-def get_function_description(function_name: str) -> str:
-    if function_name in CONVEX_FUNCTION_MAP:
-        return CONVEX_FUNCTION_MAP[function_name]
-    else:
-        raise ValueError(f"Unknown function: {function_name}")

@@ -90,7 +90,15 @@ class BriefRelation(TypedDict):
     relationType: str
     target: str
 
+class ConvexFunctionSpec(TypedDict):
+    convex_identifier: str
+    function_args: dict
+    description: str
 
+class BriefFunction(TypedDict):
+    convex_identifier: str
+    description: str
+    tool_name: str
 
 class InitResult(TypedDict):
     deploymentSelector: str
