@@ -1,25 +1,21 @@
+import asyncio
 import logging
 from pathlib import Path
 
 import gradio as gr
 
-from youtwo.agents.agent import agent
+from youtwo.agents.agent import kg_management_agent as agent
+from youtwo.agents.prompts import KG_MANAGEMENT_TASK, KG_MANAGEMENT_PROMPT
+from youtwo.memory.visualize import visualize_knowledge_graph
+from youtwo.paths import DATA_DIR
 from youtwo.rag.vectara_client import VectaraClient, is_allowed_filetype
-
+from youtwo.server.config import USER_DEFAULT_MESSAGE
+from smolagents import ActionStep, FinalAnswerStep, PlanningStep, RunResult, ChatMessageStreamDelta
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------
-
-
-def update_knowledge_graph_relations() -> str:
-    """
-    Updates the knowledge graph using the latest lifelog data.
-    Simulates the creation of new triples (subject-predicate-object) from lifelog content.
-
-    Returns:
-        str: Update summary with number of relations added.
-    """
-    return "🧠 15 new triples have been added to the knowledge graph."
+INITIAL_ASSISTANT_MESSAGE = KG_MANAGEMENT_PROMPT
+PREFILLED_HUMAN_MESSAGE = USER_DEFAULT_MESSAGE
 
 
 def natural_language_handler(query: str) -> str:
@@ -43,10 +39,46 @@ def agent_chat(message: str, chat_history):
         return chat_history, ""
 
     # Append user message to history
+    context_str = "\n\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history[:2]])
     chat_history.append({"role": "user", "content": message})
+    task = KG_MANAGEMENT_TASK.format(context=context_str, user_input=message)
 
-    # Run your agent
-    response = agent.run(message)
+    STREAM = True
+    if STREAM:
+        steps = []
+        # Run your agent
+        stream_response_string = ""
+        for step in agent.run(task, stream=True):
+            if isinstance(step, ActionStep):
+                step_string = step.model_output or "Empty action step"
+                # print("Action step: ", step_string[50:])
+                steps.append(step_string)
+            elif isinstance(step, FinalAnswerStep):
+                # print("Truncating final answer")
+                step_string = str(step.output)
+                # print("Final answer: ", step_string[50:])
+                steps.append(step_string)
+            elif isinstance(step, PlanningStep):
+                step_string = step.model_output_message.content or "Empty planning step"
+                # print("Planning step: ", step_string[50:])
+                steps.append(step_string)
+            elif isinstance(step, RunResult):
+                step_string = str(step.output)
+                # print("Run result: ", step_string[:50])
+                steps.append(step_string)
+            elif isinstance(step, ChatMessageStreamDelta):
+                step_string = step.content or ""
+                # print("Chat message stream delta: ", step_string[:50])
+                stream_response_string += step_string
+            else:
+                # if isinstance(step, str):
+                #     stream_response_string += step
+                # else:
+                print("Unknown step: ", str(step))
+        response = steps[-1] or stream_response_string
+    else:
+        response = agent.run(task)
+    
     if isinstance(response, dict):
         parsed_response = (
             response.get("output") or response.get("answer") or str(response)
@@ -90,6 +122,26 @@ def handle_file_input(file_path: str | None, uploaded_file: gr.File | None):
 
     return f"Uploaded document: {upload_result['id']}"
 
+# Add visualize button handler
+def handle_visualize():
+    try:
+        # Run the async function
+        visualization_path, data_path = asyncio.run(visualize_knowledge_graph())
+        
+        result_msg = f"✅ Knowledge graph visualization generated successfully!\nVisualization saved to: {visualization_path}"
+        if data_path:
+            result_msg += f"\nData saved to: {data_path}"
+        
+        return gr.update(value=result_msg, visible=True)
+    except Exception as e:
+        return gr.update(value=f"❌ Error generating visualization: {str(e)}", visible=True)
+
+def handle_load_graph():
+    # read the image from DATA_DIR / knowledge_graph.png
+    graph_image_file = DATA_DIR / "knowledge_graph.png"
+    if not graph_image_file.exists():
+        return gr.update(value="❌ Error loading graph image", visible=True), None
+    return gr.update(value="✅ Graph Image Loaded", visible=True), gr.Image(value=graph_image_file, visible=True)
 
 # ---------------------------
 # Gradio UI (Blocks API)
@@ -101,17 +153,30 @@ def get_gradio_blocks():
         gr.Markdown(
             "## 🧠 YouTwo Memory Agent Interface\nBuilt with Gradio + MCP Support for LLM Tool Integration"
         )
-
-        with gr.Tab("🗣️ Grounded Q&A"):
-            gr.Markdown("Input natural language requests for system actions.")
-            with gr.Row():
-                user_query = gr.Textbox(label="Type your query")
-            query_btn = gr.Button("Process Request")
-            query_out = gr.Textbox(label="System Response")
-            query_btn.click(
-                fn=natural_language_handler, inputs=user_query, outputs=query_out
+        with gr.Tab("🔍 Visualize"):
+            gr.Markdown("Visualize the knowledge graph")
+            
+            visualize_btn = gr.Button("🔍 Generate Image", variant="primary")
+            visualization_output = gr.Textbox(
+                label="Image Status",
+                visible=False,
+                interactive=False
             )
-
+            
+            graph_image = gr.Image(
+                label="Knowledge Graph",
+                type="filepath",
+                height=700,
+                show_download_button=True,
+                show_fullscreen_button=True,
+                interactive=False
+            )
+            
+            # Wire up the visualize button
+            visualize_btn.click(
+                fn=handle_load_graph,
+                outputs=[visualization_output, graph_image],
+            )
         with gr.Tab("⚙️ Agentic Chat"):
             gr.Markdown("Chat using memory tools")
             chatbot = gr.Chatbot(
@@ -124,20 +189,27 @@ def get_gradio_blocks():
                 value=[
                     {
                         "role": "assistant",
-                        "content": "👋 Hello! I'm the YouTwo Agent, your intelligent assistant for really good memory. How can I help you today?",
+                        "content": INITIAL_ASSISTANT_MESSAGE,
                     }
                 ],
             )
-            user_input = gr.Textbox(
-                placeholder="Type your question...",
-                label="Message",
-                lines=2,
-                scale=4,
-                show_label=False,
-                value="Inspect the database, then tell me about the connection of psychotherapy and theater.",
+            visualization_output = gr.Textbox(
+                label="Visualization Status",
+                visible=False,
+                interactive=False
             )
-            # clear_button = gr.Button("🗑️ Clear Chat", size="sm")
-            send_btn = gr.Button("Send", variant="primary", scale=1)
+            with gr.Row():
+                user_input = gr.Textbox(
+                    placeholder="Type your question...",
+                    label="Message",
+                    lines=2,
+                    scale=4,
+                    show_label=False,
+                    value=PREFILLED_HUMAN_MESSAGE,
+                )
+                with gr.Column(scale=1):
+                    send_btn = gr.Button("Send", variant="primary")
+                    visualize_btn = gr.Button("🔍 Visualize", variant="secondary")
 
             # Wire up the button (and hitting Enter) to call `agent_chat`
             send_btn.click(
@@ -151,6 +223,21 @@ def get_gradio_blocks():
                 inputs=[user_input, chatbot],
                 outputs=[chatbot, user_input],
                 # outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
+            )
+            
+            
+            visualize_btn.click(
+                fn=handle_visualize,
+                outputs=[visualization_output],
+            )
+        with gr.Tab("🗣️ Grounded Q&A"):
+            gr.Markdown("Input natural language requests for system actions.")
+            with gr.Row():
+                user_query = gr.Textbox(label="Type your query")
+            query_btn = gr.Button("Process Request")
+            query_out = gr.Textbox(label="System Response")
+            query_btn.click(
+                fn=natural_language_handler, inputs=user_query, outputs=query_out
             )
 
         with gr.Tab("🗣️Input File"):
