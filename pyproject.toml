@@ -34,6 +34,7 @@ graph = [
     "langchain_core", 
     "matplotlib",
     "networkx",
+    "graphviz"
 ]
 
 all = [

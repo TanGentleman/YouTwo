@@ -10,6 +10,8 @@ modal
 # For knowledge graph
 langgraph
 langchain_core
-matplotlib
 networkx
+# For visualization
+matplotlib
+graphviz
 
