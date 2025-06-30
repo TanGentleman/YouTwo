@@ -5,4 +5,4 @@ from src.frontend.app import get_gradio_blocks
 
 if __name__ == "__main__":
     blocks = get_gradio_blocks()
-    blocks.launch()
+    blocks.launch(mcp_server=True)

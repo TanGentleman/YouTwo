@@ -117,16 +117,5 @@ async def get_tools() -> list[types.Tool]:
     return await get_function_spec(deployment_info)
 
 
-# @app.call_tool()
-# async def call_tool(
-#     name: str,
-#     arguments: dict
-# ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-#     try:
-#         return await run_convex_function(deployment_info["deploymentSelector"], name, arguments)
-#     except Exception as e:
-#         print(f"Error running tool {name}: {e}")
-#         return None
-
 if __name__ == "__main__":
     app.run()

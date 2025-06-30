@@ -14,7 +14,7 @@ server_params = StdioServerParameters(
         "--directory",
         f"{Path(__file__).parent.resolve()}",
         "run",
-        "scripts/run_mcp.py",
+        "run_mcp.py",
     ],
     env=None,
 )
