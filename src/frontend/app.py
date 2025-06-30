@@ -11,8 +11,9 @@ from smolagents import (
     RunResult,
 )
 
-from youtwo.agents.agent import kg_management_agent as agent
-from youtwo.agents.prompts import KG_MANAGEMENT_PROMPT, KG_MANAGEMENT_TASK
+from youtwo.agents.agent import visualizer_agent as agent
+# from youtwo.agents.prompts import KG_MANAGEMENT_PROMPT, KG_MANAGEMENT_TASK
+from youtwo.agents.prompts import VISUALIZER_AGENT_PROMPT, VISUALIZER_AGENT_TASK
 from youtwo.memory.visualize import visualize_knowledge_graph
 from youtwo.paths import DATA_DIR
 from youtwo.rag.vectara_client import VectaraClient, is_allowed_filetype
@@ -21,7 +22,7 @@ from youtwo.server.config import USER_DEFAULT_MESSAGE
 # ---------------------------
 # Placeholder Backend Functions
 # ---------------------------
-INITIAL_ASSISTANT_MESSAGE = KG_MANAGEMENT_PROMPT
+INITIAL_ASSISTANT_MESSAGE = VISUALIZER_AGENT_PROMPT
 PREFILLED_HUMAN_MESSAGE = USER_DEFAULT_MESSAGE
 
 
@@ -41,64 +42,74 @@ def natural_language_handler(query: str) -> str:
     return f"*Retrieved {len(chunks)} chunks.*\n------\n{response}"
 
 
-def agent_chat(message: str, chat_history):
-    if not message.strip():
-        return chat_history, ""
+def user(user_message: str, history: list):
+    """Add user message to chat history and clear input field."""
+    if not user_message.strip():
+        return "", history
+    
+    return "", history + [{"role": "user", "content": user_message}]
 
-    # Append user message to history
-    context_str = "\n\n".join(
-        [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history[:2]]
-    )
-    chat_history.append({"role": "user", "content": message})
-    task = KG_MANAGEMENT_TASK.format(context=context_str, user_input=message)
 
-    STREAM = True
-    if STREAM:
-        steps = []
-        # Run your agent
-        stream_response_string = ""
+def bot(history: list):
+    """Generate bot response with streaming."""
+    if not history or history[-1]["role"] != "user":
+        return
+    
+    user_message = history[-1]["content"]
+    input_string = f"Context:\n\n{history[0]['content']}\n\nUser Input:\n\n{user_message}"
+    task = VISUALIZER_AGENT_TASK.format(user_input=input_string)
+    
+    # Add empty assistant message to history for streaming
+    history.append({"role": "assistant", "content": ""})
+    stream_response_string = ""
+    steps = {
+        "action_steps": [],
+        "planning_steps": [],
+        "final_answer_steps": [],
+        "stream_response_string": ""
+    }
+    try:
+        # Run agent with streaming
         for step in agent.run(task, stream=True):
-            if isinstance(step, ActionStep):
+            if isinstance(step, ChatMessageStreamDelta):
+                step_string = step.content or ""
+                stream_response_string += step_string
+                # Stream the delta content immediately
+                history[-1]["content"] += step_string
+                yield history
+            elif isinstance(step, ActionStep):
+                print(f"Action step!")
                 step_string = step.model_output or "Empty action step"
-                # print("Action step: ", step_string[50:])
-                steps.append(step_string)
+                steps["action_steps"].append(step_string)
             elif isinstance(step, FinalAnswerStep):
-                # print("Truncating final answer")
+                print(f"Final answer obtained!")
                 step_string = str(step.output)
-                # print("Final answer: ", step_string[50:])
-                steps.append(step_string)
+                steps["final_answer_steps"].append(step_string)
+                # Stream the final answer character by character
+                history[-1]["content"] = step_string
+                yield history
             elif isinstance(step, PlanningStep):
+                print(f"Planning step!")
                 step_string = step.model_output_message.content or "Empty planning step"
-                # print("Planning step: ", step_string[50:])
-                steps.append(step_string)
+                steps["planning_steps"].append(step_string)
             elif isinstance(step, RunResult):
                 step_string = str(step.output)
-                # print("Run result: ", step_string[:50])
-                steps.append(step_string)
-            elif isinstance(step, ChatMessageStreamDelta):
-                step_string = step.content or ""
-                # print("Chat message stream delta: ", step_string[:50])
-                stream_response_string += step_string
+                steps["final_answer_steps"].append(step_string)
+            elif isinstance(step, dict):
+                # These are the tools that were called
+                for index, (tool_call, value) in enumerate(step.items()):
+                    print(f"Tool call {index}: {tool_call}, Value: {value}")
+            elif isinstance(step, str):
+                print(f"Final response step?: {step}")
+            elif step is None:
+                print(f"This step is None!")
             else:
-                # if isinstance(step, str):
-                #     stream_response_string += step
-                # else:
-                print("Unknown step: ", str(step))
-        response = steps[-1] or stream_response_string
-    else:
-        response = agent.run(task)
-
-    if isinstance(response, dict):
-        parsed_response = (
-            response.get("output") or response.get("answer") or str(response)
-        )
-    else:
-        parsed_response = str(response)
-
-    # Append agent response to history
-    chat_history.append({"role": "assistant", "content": parsed_response})
-
-    return chat_history, ""
+                print(f"Unknown step of type {type(step)}: {str(step)}")
+                
+    except Exception as e:
+        error_message = f"Error: {str(e)}"
+        history[-1]["content"] = error_message
+        yield history
 
 
 # Gradio Behavior:
@@ -225,18 +236,27 @@ def get_gradio_blocks():
                     send_btn = gr.Button("Send", variant="primary")
                     visualize_btn = gr.Button("🔍 Visualize", variant="secondary")
 
-            # Wire up the button (and hitting Enter) to call `agent_chat`
+            # Wire up the button (and hitting Enter) with streaming
             send_btn.click(
-                fn=agent_chat,
+                fn=user,
                 inputs=[user_input, chatbot],
-                outputs=[chatbot, user_input],
-                show_progress=True,
+                outputs=[user_input, chatbot],
+                queue=False
+            ).then(
+                fn=bot,
+                inputs=[chatbot],
+                outputs=[chatbot]
             )
+            
             user_input.submit(
-                fn=agent_chat,
+                fn=user,
                 inputs=[user_input, chatbot],
-                outputs=[chatbot, user_input],
-                # outputs=[self.chatbot, self.message_input, self.context_display, self.suggestions_display],
+                outputs=[user_input, chatbot],
+                queue=False
+            ).then(
+                fn=bot,
+                inputs=[chatbot],
+                outputs=[chatbot]
             )
 
             visualize_btn.click(
