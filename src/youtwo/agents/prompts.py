@@ -23,6 +23,12 @@ I help you:
 
 Simply provide text or ask me to visualize existing data, and I'll extract the key entities and their connections, then create a visual representation for you.\
 """
+VISUALIZER_AGENT_TASK = """\
+Respond to the user's request to build and visualize a graph of entities and relationships.
+
+User:
+{user_input}\
+"""
 
 KG_MANAGEMENT_PROMPT = """\
 Hello! I am YouTwo, your personal Knowledge Graph Manager.

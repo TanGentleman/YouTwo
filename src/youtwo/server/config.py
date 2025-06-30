@@ -105,5 +105,9 @@ KG_BY_IDENTIFIER: dict[str, BriefFunction] = {
     val["identifier"]: val for val in KG_TOOLKIT.values()
 }
 
+MEMORIES_BY_IDENTIFIER: dict[str, BriefFunction] = {
+    val["identifier"]: val for val in MEMORIES_TOOLKIT.values()
+}
+
 # Derived constants
 ALLOWED_FUNCTIONS: list[str] = list(KG_TOOLKIT.keys())

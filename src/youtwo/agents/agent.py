@@ -26,7 +26,7 @@ model = InferenceClientModel(
     provider="nebius",
     model_id=DEFAULT_MODEL,
     api_key=os.environ["NEBIUS_API_KEY"],
-    max_tokens=5000,
+    max_tokens=2000,
 )
 agent = CodeAgent(
     tools=[
