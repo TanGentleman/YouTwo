@@ -48,6 +48,7 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 - `YouTwo-6` (done): cut the Python side to `youtwo-mcp` (drop the Gradio/Vectara/smolagents/langgraph demo; deps down to httpx, mcp, python-dotenv; mcp 1.10 to 1.30); README rewritten around the MCP server.
 - `YouTwo-7` (done): drop the journals/sources/metadata tables, the `/sources` routes and uncalled internal functions; old documents still validate (tested by pushing over a local backend with rows in every old table).
 - `YouTwo-8` (done): mcp 1.30 to 2.3.0 (`FastMCP` is now `MCPServer`; HTTP errors raise `ToolError` so the status still reaches the client; tests use `mcp.Client`); `typing_extensions.TypedDict`, which pydantic needs on Python < 3.12; every dependency pinned exactly; CI on actions v7 and setup-uv v10.3.3 with Node 22.23.4/26.13.0 and Python 3.10.22/3.14.10; README quickstart on a local anonymous backend; the boilerplate `backend/README.md` removed.
+- `YouTwo-9`: README cut to 91 words; details moved to IMPLEMENTATION.md.
 
 ## Applying the stack upstream
 
@@ -55,13 +56,13 @@ The import commit is `8358445`. In a clean upstream checkout at 703927e, next to
 
 ```bash
 git -C ../kranti-sandbox fetch origin
-git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo 8358445..origin/YouTwo-8
+git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo 8358445..origin/YouTwo-9
 git am /tmp/youtwo/*.patch
 ```
 
 To stop at an earlier branch, use `8358445..origin/YouTwo-<n>`. No `--keep-cr` needed. Checked on
-fresh clones at `-8`: the result matches `origin/YouTwo-8:YouTwo`, and the Tests commands in the
-README pass.
+fresh clones at `-9`: the result matches `origin/YouTwo-9:YouTwo`, and the Tests commands in
+IMPLEMENTATION.md pass.
 
 ## Needs Tan
 
