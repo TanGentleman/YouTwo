@@ -6,17 +6,16 @@ Our gradio app for MCP-powered memory.
 
 A full RAG pipeline using Vectara, with an optional persistent memory system using a knowledge graph, built with Convex backend. This system allows for storing information about entities, their relations, and observations across multiple interactions.
 
-# This app is deployed on the current link: <https://tangentleman--youtwo-gradio-gradio-app.modal.run>
+The Modal deployment (`tangentleman--youtwo-gradio-gradio-app.modal.run`) is offline and returns 404.
 
 
 # Run this app locally
 ```bash
 git clone https://github.com/TanGentleman/YouTwo
 cd YouTwo
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-extra.txt
-python scripts/run_gradio_app.py
+uv sync --all-extras
+cp .env.example .env   # fill in the keys
+uv run python scripts/run_gradio_app.py
 ```
 
 # Deploy the server
@@ -39,7 +38,7 @@ The knowledge graph memory server implements:
 
 ### Prerequisites
 
-- Node.js (v14 or later)
+- Node.js 22 or later (required by convex 1.49)
 - npm
 
 ### Installation
@@ -124,6 +123,8 @@ The system also exposes HTTP endpoints for external integration:
 - `DELETE /observations` - Delete observations
 - `DELETE /relations` - Delete relations
 
+The HTTP API has no authentication: anyone with the `.convex.site` URL can read and delete the graph.
+
 ## Architecture
 
 The system is built using Convex for the backend database and API. The codebase is structured as follows:
@@ -135,7 +136,6 @@ The system is built using Convex for the backend database and API. The codebase 
   - `knowledge.ts` - Knowledge graph query functions
   - `journals.ts` - Journal entry management
   - `embeddings.ts` - Vector embedding functions
-  - `distiller.ts` - Knowledge extraction from journals
   - `operations.ts` - Operation logging utilities
   - `http.ts` - HTTP API endpoints
 
