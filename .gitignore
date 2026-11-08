@@ -3,7 +3,6 @@
 __pycache__/
 .DS_Store
 .venv/
-.docusaurus/
 node_modules/
 data/
 upload_results.json

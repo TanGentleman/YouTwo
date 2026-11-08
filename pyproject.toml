@@ -53,7 +53,6 @@ exclude = [
     "**/node_modules",
     "**/dist",
     "**/backend",
-    "**/project-website"
 ]
 
 [tool.ruff.lint]
