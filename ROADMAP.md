@@ -50,14 +50,23 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 
 ## Applying a branch upstream
 
-From a clean upstream checkout at 703927e, for branch `YouTwo-N`. The base of `YouTwo-1` is the
-import commit, `8358445`; the base of `YouTwo-N` is `YouTwo-<N-1>`. Apply the branches in order.
+Each branch's base is the branch before it; `YouTwo-1`'s base is the import commit `8358445`.
+In a clean upstream checkout at 703927e, next to `kranti-sandbox`:
 
 ```bash
 git -C ../kranti-sandbox fetch origin
-git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo-N origin/YouTwo-<N-1>..origin/YouTwo-N
-git am /tmp/youtwo-N/*.patch
+prev=8358445
+for n in 1 2 3 4 5 6 7; do   # stop at any branch
+  git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo-$n $prev..origin/YouTwo-$n
+  git am /tmp/youtwo-$n/*.patch
+  prev=origin/YouTwo-$n
+done
 ```
+
+Checked on a fresh clone: every branch applies with plain `git am` (no `--keep-cr` needed) and
+the result matches that branch's `YouTwo/` tree. At `-7`: `cd backend && npm ci && npm run
+typecheck && npm test` (13 pass), `uv sync --locked && uv run pytest` (11 pass), and
+`youtwo-mcp` ran a full graph lifecycle against a local backend.
 
 ## Needs Tan
 
