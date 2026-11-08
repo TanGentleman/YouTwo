@@ -7,6 +7,7 @@ import requests
 
 from youtwo.rag.vectara_client import VectaraClient
 from youtwo.schemas import ConvexSource, VectaraDoc
+from youtwo.server.utils import convex_headers
 from youtwo.utils import save_dict_to_file
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ def make_convex_api_call(
         assert convex_url.endswith(".site"), "Convex HTTP api base must end with .site"
         url = f"{convex_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, headers={"Content-Type": "application/json"}, timeout=20
+            method, url, json=data or {}, headers=convex_headers(), timeout=20
         )
         response.raise_for_status()
         return response.json()

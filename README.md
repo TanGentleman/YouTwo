@@ -117,7 +117,9 @@ The system also exposes HTTP endpoints for external integration:
 - `DELETE /observations` - Delete observations
 - `DELETE /relations` - Delete relations
 
-The HTTP API has no authentication: anyone with the `.convex.site` URL can read and delete the graph.
+Every route needs `Authorization: Bearer <token>`. Set the token on the deployment with
+`npx convex env set YOUTWO_API_TOKEN <token>` and the same value as `YOUTWO_API_TOKEN` in `.env`.
+With it unset, every route returns 500.
 
 ## Architecture
 

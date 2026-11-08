@@ -69,6 +69,15 @@ def get_convex_url(force_load_dotenv: bool = False) -> str:
     return deployment_url
 
 
+def convex_headers() -> dict[str, str]:
+    """Headers for the Convex HTTP API, with YOUTWO_API_TOKEN as the bearer token."""
+    headers = {"Content-Type": "application/json"}
+    token = os.getenv("YOUTWO_API_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
 # API handling functions
 async def async_convex_api_call(
     endpoint: str, method: str, data: dict = None, deployment_url: str | None = None
@@ -84,7 +93,7 @@ async def async_convex_api_call(
             raise ValueError("Convex HTTP api base must end with .site")
         url = f"{deployment_url}/{endpoint}"
         response = requests.request(
-            method, url, json=data or {}, headers={"Content-Type": "application/json"}, timeout=20
+            method, url, json=data or {}, headers=convex_headers(), timeout=20
         )
         response.raise_for_status()
         return response.json()
