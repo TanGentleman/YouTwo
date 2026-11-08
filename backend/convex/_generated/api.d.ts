@@ -18,7 +18,6 @@ import type * as operations from "../operations.js";
 import type * as patches from "../patches.js";
 import type * as relations from "../relations.js";
 import type * as sources from "../sources.js";
-import type * as tests from "../tests.js";
 
 import type {
   ApiFromModules,
@@ -37,7 +36,6 @@ declare const fullApi: ApiFromModules<{
   patches: typeof patches;
   relations: typeof relations;
   sources: typeof sources;
-  tests: typeof tests;
 }>;
 
 /**
