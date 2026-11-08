@@ -1,65 +1,24 @@
-# YouTwo Memory
+# YouTwo
 
-Our gradio app for MCP-powered memory.
+Memory for AI agents. YouTwo stores a knowledge graph of entities (people, organizations,
+places), the relations between them, and observations (facts) about them in a
+[Convex](https://convex.dev) backend, and serves it to agents as an MCP server. The MCP tools
+match the reference [memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory),
+so the graph persists across conversations and machines instead of living in a local JSON file.
 
-# YouTwo Knowledge Graph Memory Server
+## Run it
 
-A full RAG pipeline using Vectara, with an optional persistent memory system using a knowledge graph, built with Convex backend. This system allows for storing information about entities, their relations, and observations across multiple interactions.
+Needs Node 22+ and [uv](https://docs.astral.sh/uv/).
 
-The Modal deployment (`tangentleman--youtwo-gradio-gradio-app.modal.run`) is offline and returns 404.
-
-
-# Run this app locally
 ```bash
-git clone https://github.com/TanGentleman/YouTwo
-cd YouTwo
-uv sync --all-extras
-cp .env.example .env   # fill in the keys
-uv run python scripts/run_gradio_app.py
+git clone https://github.com/TanGentleman/YouTwo && cd YouTwo
+cd backend && npm ci
+npx convex dev                     # pick a deployment; leave it running
+npx convex env set YOUTWO_API_TOKEN "$(openssl rand -hex 16)"
+cd .. && uv sync
 ```
 
-## Overview
-
-The knowledge graph memory server implements:
-
-1. **Entity Management**: Create, update, and delete entities with associated metadata
-2. **Relationship Tracking**: Track how entities relate to each other
-3. **Journal System**: Record timestamped entries that can be analyzed for entity extraction
-4. **Semantic Search**: Find semantically similar content using vector embeddings
-5. **HTTP API**: External integration with the knowledge graph
-
-## Setup Instructions
-
-### Prerequisites
-
-- Node.js 22 or later (required by convex 1.49)
-- npm
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/TanGentleman/YouTwo
-cd YouTwo/backend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server (You will be prompted to login to Convex):
-```bash
-npx convex dev
-```
-
-### MCP server
-
-`youtwo-mcp` is a stdio MCP server over the HTTP API. Its tools match the reference
-[memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)
-(`create_entities`, `create_relations`, `add_observations`, `delete_entities`,
-`delete_observations`, `delete_relations`, `read_graph`, `search_nodes`, `open_nodes`).
-For Claude Desktop:
+Then add the server to your MCP client. For Claude Desktop:
 
 ```json
 {
@@ -73,84 +32,45 @@ For Claude Desktop:
 }
 ```
 
-Against a local backend (`npx convex dev`), set `CONVEX_SITE_URL=http://127.0.0.1:3211` instead of `CONVEX_URL`.
+`npx convex env get YOUTWO_API_TOKEN` prints the token. Against a local backend, set
+`CONVEX_SITE_URL=http://127.0.0.1:3211` instead of `CONVEX_URL`.
 
-## API Usage
+## HTTP API
 
-The system provides both a JavaScript API and HTTP endpoints for managing the knowledge graph.
+`backend/convex/http.ts`. Every route needs `Authorization: Bearer $YOUTWO_API_TOKEN`; with the
+token unset on the deployment, every route returns 500.
 
-### JavaScript API
+| Route | Body or query |
+| --- | --- |
+| `POST /entities` | `{"entities": [{"name", "entityType", "observations"?}]}` |
+| `POST /relations` | `{"relations": [{"from", "to", "relationType"}]}` |
+| `POST /observations` | `{"observations": [{"entityName", "contents"}]}` |
+| `DELETE /entities` | `{"entityNames": [...]}` (also deletes their relations) |
+| `DELETE /relations` | `{"relations": [{"from", "to", "relationType"}]}` |
+| `DELETE /observations` | `{"deletions": [{"entityName", "observations"}]}` |
+| `GET /graph` | the whole graph |
+| `GET /entities` | names and types |
+| `GET /search?q=` | entities whose name, type or observations contain `q` |
+| `GET /nodes?names=a,b` | the named entities and their relations |
 
-#### Creating Entities
-
-```javascript
-await createEntities({
-  entities: [
-    {
-      name: "John_Smith",
-      entityType: "person",
-      observations: ["Speaks fluent Spanish", "Graduated in 2019"]
-    }
-  ]
-});
+```bash
+curl -H "Authorization: Bearer $YOUTWO_API_TOKEN" -H "Content-Type: application/json" \
+  -d '{"entities": [{"name": "Ada", "entityType": "person", "observations": ["Writes Rust"]}]}' \
+  https://<name>.convex.site/entities
 ```
 
-#### Creating Relations
+## Layout
 
-```javascript
-await createRelations({
-  relations: [
-    {
-      from: "John_Smith",
-      to: "Anthropic",
-      relationType: "works_at"
-    }
-  ]
-});
+- `backend/convex/`: schema, `entities.ts`, `relations.ts`, `knowledge.ts` (graph queries),
+  `http.ts`, and convex-test unit tests.
+- `src/youtwo/mcp_server.py`: the MCP server, a thin client of the HTTP API.
+
+## Test
+
+```bash
+cd backend && npm run typecheck && npm test   # in memory, no deployment
+uv run pytest                                 # MCP server against a fake HTTP backend
 ```
-
-#### Reading the Graph
-
-```javascript
-const graph = await readGraph();
-```
-
-#### Searching Nodes
-
-```javascript
-const results = await searchNodes({ query: "Spanish speaker" });
-```
-
-### HTTP API
-
-The system also exposes HTTP endpoints for external integration:
-
-- `POST /entities` - Create entities
-- `POST /relations` - Create relations
-- `POST /observations` - Add observations to entities
-- `GET /graph` - Read the entire knowledge graph
-- `GET /search?q=query` - Search nodes by query
-- `GET /nodes?names=name1,name2` - Get specific nodes by name
-- `DELETE /entities` - Delete entities
-- `DELETE /observations` - Delete observations
-- `DELETE /relations` - Delete relations
-
-Every route needs `Authorization: Bearer <token>`. Set the token on the deployment with
-`npx convex env set YOUTWO_API_TOKEN <token>` and the same value as `YOUTWO_API_TOKEN` in `.env`.
-With it unset, every route returns 500.
-
-## Architecture
-
-The system is built using Convex for the backend database and API. The codebase is structured as follows:
-
-- `backend/convex/` - Convex backend code
-  - `schema.ts` - Database schema definition
-  - `entities.ts` - Entity management functions
-  - `relations.ts` - Relation management functions
-  - `knowledge.ts` - Knowledge graph query functions
-  - `journals.ts` - Journal entry management
-  - `operations.ts` - Operation logging utilities
-  - `http.ts` - HTTP API endpoints
 
 ## License
 
