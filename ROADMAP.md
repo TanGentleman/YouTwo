@@ -32,7 +32,7 @@ Cut: `project-website/` (Docusaurus template: 2019/2021 sample posts, undraw ima
 'https://example.com'`), `examples/*.ipynb`, `plan.md` (hackathon brainstorm), `requirements*.txt`
 (duplicate `pyproject.toml`), `scripts/alert_mcp.py` and `scripts/limitless_mcp.py` (servers for
 other projects; `/ping` isn't in this backend), `backend/convex/embeddings.ts` (random mock
-vectors), `patches.ts` (one-off migration), `tests.ts` (replaced by unit tests), the broken Modal
+vectors), `patches.ts` (one-off migration), the broken Modal
 deploy. Bigger, optional cut: the Vectara RAG, Gradio app, smolagents and langgraph code, and the
 journals/sources/metadata tables that only the Vectara sync uses.
 
@@ -41,7 +41,7 @@ journals/sources/metadata tables that only the Vectara sync uses.
 Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 
 - `YouTwo-1` (done): import, this roadmap, lockfiles, `delete_observations` and `check_convex_project` fixes, Gradio app starts again, README setup fixes.
-- `YouTwo-2` (planned): convex-test unit tests for the backend, committed `convex/_generated`, GitHub Actions CI.
+- `YouTwo-2` (done): convex-test unit tests (`cd backend && npm test`) replace `tests:runTests`; pytest for the Python fixes; committed `convex/_generated`; GitHub Actions CI (`.github/workflows/ci.yml`, runs once applied upstream).
 - `YouTwo-3` (planned): cut the repo noise listed above.
 - `YouTwo-4` (planned): bearer-token auth on the HTTP API.
 - `YouTwo-5` (planned): a thin MCP server over the HTTP API, tested offline.
