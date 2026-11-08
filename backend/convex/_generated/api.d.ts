@@ -8,14 +8,12 @@
  * @module
  */
 
-import type * as embeddings from "../embeddings.js";
 import type * as entities from "../entities.js";
 import type * as http from "../http.js";
 import type * as journals from "../journals.js";
 import type * as knowledge from "../knowledge.js";
 import type * as metadata from "../metadata.js";
 import type * as operations from "../operations.js";
-import type * as patches from "../patches.js";
 import type * as relations from "../relations.js";
 import type * as sources from "../sources.js";
 
@@ -26,14 +24,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  embeddings: typeof embeddings;
   entities: typeof entities;
   http: typeof http;
   journals: typeof journals;
   knowledge: typeof knowledge;
   metadata: typeof metadata;
   operations: typeof operations;
-  patches: typeof patches;
   relations: typeof relations;
   sources: typeof sources;
 }>;

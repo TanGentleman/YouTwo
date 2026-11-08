@@ -135,7 +135,6 @@ The system is built using Convex for the backend database and API. The codebase 
   - `relations.ts` - Relation management functions
   - `knowledge.ts` - Knowledge graph query functions
   - `journals.ts` - Journal entry management
-  - `embeddings.ts` - Vector embedding functions
   - `operations.ts` - Operation logging utilities
   - `http.ts` - HTTP API endpoints
 
