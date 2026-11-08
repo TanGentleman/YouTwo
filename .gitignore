@@ -6,7 +6,8 @@ __pycache__/
 .docusaurus/
 backend/convex/_generated/
 node_modules/
-backend/package-lock.json
-*.json
+data/
+upload_results.json
 src/youtwo.egg-info/
-uv.lock
+knowledge_graph-*.json
+.convex/
