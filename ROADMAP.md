@@ -47,32 +47,27 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 - `YouTwo-5` (done): `youtwo-mcp`, a stdio MCP server over the HTTP API with the reference memory server's tools, tested offline and against a local backend; replaces `scripts/run_mcp*.py`.
 - `YouTwo-6` (done): cut the Python side to `youtwo-mcp` (drop the Gradio/Vectara/smolagents/langgraph demo; deps down to httpx, mcp, python-dotenv; mcp 1.10 to 1.30); README rewritten around the MCP server.
 - `YouTwo-7` (done): drop the journals/sources/metadata tables, the `/sources` routes and uncalled internal functions; old documents still validate (tested by pushing over a local backend with rows in every old table).
+- `YouTwo-8` (done): mcp 1.30 to 2.3.0 (`FastMCP` is now `MCPServer`; HTTP errors raise `ToolError` so the status still reaches the client; tests use `mcp.Client`); `typing_extensions.TypedDict`, which pydantic needs on Python < 3.12; every dependency pinned exactly; CI on actions v7 and setup-uv v10.3.3 with Node 22.23.4/26.13.0 and Python 3.10.22/3.14.10; README quickstart on a local anonymous backend; the boilerplate `backend/README.md` removed.
 
-## Applying a branch upstream
+## Applying the stack upstream
 
-Each branch's base is the branch before it; `YouTwo-1`'s base is the import commit `8358445`.
-In a clean upstream checkout at 703927e, next to `kranti-sandbox`:
+The import commit is `8358445`. In a clean upstream checkout at 703927e, next to `kranti-sandbox`:
 
 ```bash
 git -C ../kranti-sandbox fetch origin
-prev=8358445
-for n in 1 2 3 4 5 6 7; do   # stop at any branch
-  git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo-$n $prev..origin/YouTwo-$n
-  git am /tmp/youtwo-$n/*.patch
-  prev=origin/YouTwo-$n
-done
+git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo 8358445..origin/YouTwo-8
+git am /tmp/youtwo/*.patch
 ```
 
-Checked on a fresh clone: every branch applies with plain `git am` (no `--keep-cr` needed) and
-the result matches that branch's `YouTwo/` tree. At `-7`: `cd backend && npm ci && npm run
-typecheck && npm test` (13 pass), `uv sync --locked && uv run pytest` (11 pass), and
-`youtwo-mcp` ran a full graph lifecycle against a local backend.
+To stop at an earlier branch, use `8358445..origin/YouTwo-<n>`. No `--keep-cr` needed. Checked on
+fresh clones at `-8`: the result matches `origin/YouTwo-8:YouTwo`, and the Tests commands in the
+README pass.
 
 ## Needs Tan
 
-- `YouTwo-1` pins `gradio[mcp]<6` instead of porting the app to gradio 6 (that pin holds `mcp` at 1.10.1). `YouTwo-6` drops gradio and pins `mcp>=1.10,<2`; mcp 2.x changes the server API.
 - `YouTwo-4` changes the API: after applying it, run `npx convex env set YOUTWO_API_TOKEN <token>` on the deployment and put the same token in `.env`, or every route returns 500.
 - `YouTwo-7` changes the schema. Convex keeps the rows of the dropped tables; clear them in the dashboard if wanted. `journalIds` stays as an optional unused field so existing entities validate; removing it needs a migration.
-- Not verified: anything needing Vectara, Nebius or Modal keys (RAG answers, agent runs, deploys) or a Convex cloud deployment.
+- Not verified: a Convex cloud deployment, a real MCP client such as Claude Desktop, and (before `-6`) anything needing Vectara, Nebius or Modal keys.
+- CI has not run on GitHub; it runs once the stack is applied upstream.
 - `YouTwo-3` deletes the Modal deploy instead of fixing it, since a fix can't be tested without a Modal account. `YouTwo-6` goes further and treats the knowledge-graph MCP server as the product, deleting the Gradio/RAG demo. Stop at `-5` to keep the demo.
 - The GitHub repo homepage points at the Docusaurus template site; change or clear it in the repo settings.
