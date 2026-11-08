@@ -43,7 +43,7 @@ def make_convex_api_call(
 
 def get_source_filenames_from_convex() -> List[str]:
     """Get filenames from source list in Convex metadata table."""
-    response = make_convex_api_call("metadata", "GET")
+    response = make_convex_api_call("sources/info", "GET")
     if not response or "sourceInfo" not in response:
         logger.warning("No source info found in Convex metadata.")
         return []
