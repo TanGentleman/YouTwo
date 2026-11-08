@@ -60,7 +60,11 @@ exclude = [
 select = ["E", "F", "W", "I", "C", "N", "Q", "S", "T", "B", "PL"]
 ignore = ["E501"]
 isort = { known-first-party = ["youtwo"] }
+per-file-ignores = { "tests/*" = ["S101"] }
 
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 80
+
+[dependency-groups]
+dev = ["pytest>=8"]
