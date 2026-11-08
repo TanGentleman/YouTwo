@@ -42,7 +42,7 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 
 - `YouTwo-1` (done): import, this roadmap, lockfiles, `delete_observations` and `check_convex_project` fixes, Gradio app starts again, README setup fixes.
 - `YouTwo-2` (done): convex-test unit tests (`cd backend && npm test`) replace `tests:runTests`; pytest for the Python fixes; committed `convex/_generated`; GitHub Actions CI (`.github/workflows/ci.yml`, runs once applied upstream).
-- `YouTwo-3` (done): cut the noise listed above (website, notebooks, plan, requirements files, other projects' MCP scripts, `embeddings.ts`, `patches.ts`, the Modal deploy): 95 files to 61.
+- `YouTwo-3` (done): cut the noise listed above (website, notebooks, plan, requirements files, other projects' MCP scripts, `embeddings.ts`, `patches.ts`, the Modal deploy): 108 files to 61.
 - `YouTwo-4` (done): bearer-token auth (`YOUTWO_API_TOKEN`) on every HTTP route, Python clients send it; fix the RAG sync calling a missing `/metadata` route.
 - `YouTwo-5` (done): `youtwo-mcp`, a stdio MCP server over the HTTP API with the reference memory server's tools, tested offline and against a local backend; replaces `scripts/run_mcp*.py`.
 - `YouTwo-6` (done): cut the Python side to `youtwo-mcp` (drop the Gradio/Vectara/smolagents/langgraph demo; deps down to httpx, mcp, python-dotenv; mcp 1.10 to 1.30); README rewritten around the MCP server.
