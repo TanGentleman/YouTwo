@@ -18,12 +18,6 @@ cp .env.example .env   # fill in the keys
 uv run python scripts/run_gradio_app.py
 ```
 
-# Deploy the server
-```bash
-cd YouTwo
-modal deploy deployment/modal_app.py
-```
-
 ## Overview
 
 The knowledge graph memory server implements:

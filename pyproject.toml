@@ -26,9 +26,6 @@ dependencies = [
 frontend = [
     "gradio[mcp]>=5.33,<6",
 ]
-deployment = [
-    "modal",
-]
 graph = [
     "langgraph",
     "langchain_core", 
@@ -39,7 +36,6 @@ graph = [
 
 all = [
     "youtwo[frontend]",
-    "youtwo[deployment]",
     "youtwo[graph]"
 ]
 
