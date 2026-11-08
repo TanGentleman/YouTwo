@@ -28,7 +28,7 @@ Keep: `backend/convex` entities, relations, observations and the graph queries (
 `relations.ts`, `knowledge.ts`, `schema.ts`, `http.ts`), and a thin Python MCP server that calls
 the HTTP API.
 
-Cut: `project-website/` (Docusaurus template: 2019/2021 sample posts, undraw images, `url:
+Cut on `YouTwo-3`: `project-website/` (Docusaurus template: 2019/2021 sample posts, undraw images, `url:
 'https://example.com'`), `examples/*.ipynb`, `plan.md` (hackathon brainstorm), `requirements*.txt`
 (duplicate `pyproject.toml`), `scripts/alert_mcp.py` and `scripts/limitless_mcp.py` (servers for
 other projects; `/ping` isn't in this backend), `backend/convex/embeddings.ts` (random mock
@@ -42,7 +42,7 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 
 - `YouTwo-1` (done): import, this roadmap, lockfiles, `delete_observations` and `check_convex_project` fixes, Gradio app starts again, README setup fixes.
 - `YouTwo-2` (done): convex-test unit tests (`cd backend && npm test`) replace `tests:runTests`; pytest for the Python fixes; committed `convex/_generated`; GitHub Actions CI (`.github/workflows/ci.yml`, runs once applied upstream).
-- `YouTwo-3` (planned): cut the repo noise listed above.
+- `YouTwo-3` (done): cut the noise listed above (website, notebooks, plan, requirements files, other projects' MCP scripts, `embeddings.ts`, `patches.ts`, the Modal deploy): 95 files to 61.
 - `YouTwo-4` (planned): bearer-token auth on the HTTP API.
 - `YouTwo-5` (planned): a thin MCP server over the HTTP API, tested offline.
 - `YouTwo-6` (planned): knowledge-graph-only core; drop the RAG demo; new README.
@@ -62,5 +62,5 @@ git am /tmp/youtwo-N/*.patch
 
 - Pinned `gradio[mcp]<6` instead of porting the app to gradio 6; that pin also holds `mcp` at 1.10.1.
 - Not verified: anything needing Vectara, Nebius or Modal keys (RAG answers, agent runs, deploys) or a Convex cloud deployment.
-- Decide whether the Modal/Gradio demo should come back online, or whether the knowledge-graph MCP server is the product.
+- `YouTwo-3` deletes the Modal deploy instead of fixing it, since a fix can't be tested without a Modal account. Decide whether the Modal/Gradio demo should come back online, or whether the knowledge-graph MCP server is the product.
 - The GitHub repo homepage points at the Docusaurus template site; change or clear it in the repo settings.
