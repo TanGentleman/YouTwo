@@ -11,11 +11,13 @@ Environment:
 """
 
 import os
-from typing import Any, TypedDict
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+from typing_extensions import TypedDict
 
 
 class Entity(TypedDict, total=False):
@@ -48,9 +50,9 @@ def site_url() -> str:
 
 def make_server(  # noqa: C901 (one nested function per tool)
     base_url: str, token: str | None, transport: httpx.AsyncBaseTransport | None = None
-) -> FastMCP:
+) -> MCPServer:
     headers = {"Authorization": f"Bearer {token}"} if token else {}
-    mcp = FastMCP("youtwo", log_level="WARNING")
+    mcp = MCPServer("youtwo", log_level="WARNING")
 
     async def call(method: str, path: str, **kwargs: Any) -> Any:
         async with httpx.AsyncClient(
@@ -58,7 +60,7 @@ def make_server(  # noqa: C901 (one nested function per tool)
         ) as client:
             response = await client.request(method, path, **kwargs)
         if response.is_error:
-            raise RuntimeError(
+            raise ToolError(
                 f"{method} {path}: {response.status_code} {response.text}"
             )
         return response.json()

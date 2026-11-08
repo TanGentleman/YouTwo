@@ -16,16 +16,17 @@ classifiers = [
 ]
 
 dependencies = [
-    "httpx",
-    "mcp>=1.10,<2",
-    "python-dotenv",
+    "httpx==0.28.1",
+    "mcp==2.3.0",
+    "python-dotenv==1.2.4",
+    "typing-extensions==4.16.0",
 ]
 
 [project.scripts]
 youtwo-mcp = "youtwo.mcp_server:main"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest==9.2.0"]
 
 # Ruff config
 

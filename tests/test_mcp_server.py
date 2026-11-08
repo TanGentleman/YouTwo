@@ -2,7 +2,7 @@ import json
 
 import httpx
 import pytest
-from mcp.shared.memory import create_connected_server_and_client_session
+from mcp import Client
 
 from youtwo.mcp_server import make_server, site_url
 
@@ -29,7 +29,7 @@ def fake_backend(requests):
 
 async def call(tool, args, requests, token="secret"):
     server = make_server("https://demo.convex.site", token, fake_backend(requests))
-    async with create_connected_server_and_client_session(server._mcp_server) as client:
+    async with Client(server) as client:
         return await client.call_tool(tool, args)
 
 
@@ -92,7 +92,7 @@ async def call(tool, args, requests, token="secret"):
 async def test_tools_map_to_http_routes(tool, args, method, path, body):
     requests = []
     result = await call(tool, args, requests)
-    assert not result.isError
+    assert not result.is_error
     [(sent_method, url, sent_body, auth)] = requests
     assert (sent_method, url.path, sent_body, auth) == (
         method,
@@ -117,15 +117,16 @@ async def test_http_errors_become_tool_errors():
     server = make_server(
         "https://demo.convex.site/missing", None, fake_backend(requests)
     )
-    async with create_connected_server_and_client_session(server._mcp_server) as client:
+    async with Client(server) as client:
         result = await client.call_tool("read_graph", {})
-    assert result.isError
+    assert result.is_error
+    assert "GET /graph: 404" in result.content[0].text
     assert requests[0][3] is None
 
 
 async def test_lists_the_memory_server_tools():
     server = make_server("https://demo.convex.site", None)
-    async with create_connected_server_and_client_session(server._mcp_server) as client:
+    async with Client(server) as client:
         tools = {t.name for t in (await client.list_tools()).tools}
     assert tools == {
         "create_entities",
