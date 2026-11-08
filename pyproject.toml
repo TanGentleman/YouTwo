@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 frontend = [
-    "gradio",
+    "gradio[mcp]>=5.33,<6",
 ]
 deployment = [
     "modal",
