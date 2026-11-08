@@ -3966,6 +3966,7 @@ name = "youtwo"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "mcp" },
     { name = "python-dotenv" },
     { name = "requests" },
@@ -4007,6 +4008,7 @@ dev = [
 requires-dist = [
     { name = "gradio", extras = ["mcp"], marker = "extra == 'frontend'", specifier = ">=5.33,<6" },
     { name = "graphviz", marker = "extra == 'graph'" },
+    { name = "httpx" },
     { name = "langchain-core", marker = "extra == 'graph'" },
     { name = "langgraph", marker = "extra == 'graph'" },
     { name = "matplotlib", marker = "extra == 'graph'" },

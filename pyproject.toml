@@ -16,11 +16,15 @@ classifiers = [
 ]
 
 dependencies = [
+    "httpx",
     "mcp",
     "smolagents",
     "requests",
     "python-dotenv",
 ]
+
+[project.scripts]
+youtwo-mcp = "youtwo.mcp_server:main"
 
 [project.optional-dependencies]
 frontend = [
@@ -55,7 +59,7 @@ exclude = [
 select = ["E", "F", "W", "I", "C", "N", "Q", "S", "T", "B", "PL"]
 ignore = ["E501"]
 isort = { known-first-party = ["youtwo"] }
-per-file-ignores = { "tests/*" = ["S101"] }
+per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 
 [tool.ruff.format]
 docstring-code-format = true

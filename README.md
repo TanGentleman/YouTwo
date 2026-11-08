@@ -53,9 +53,27 @@ npm install
 npx convex dev
 ```
 
-Expose all our backend functions easily using MCP or even http requests. See:
-https://docs.convex.dev/client/react/deployment-urls
-https://docs.convex.dev/ai/convex-mcp-server
+### MCP server
+
+`youtwo-mcp` is a stdio MCP server over the HTTP API. Its tools match the reference
+[memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)
+(`create_entities`, `create_relations`, `add_observations`, `delete_entities`,
+`delete_observations`, `delete_relations`, `read_graph`, `search_nodes`, `open_nodes`).
+For Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "youtwo": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/YouTwo", "run", "youtwo-mcp"],
+      "env": { "CONVEX_URL": "https://<name>.convex.cloud", "YOUTWO_API_TOKEN": "<token>" }
+    }
+  }
+}
+```
+
+Against a local backend (`npx convex dev`), set `CONVEX_SITE_URL=http://127.0.0.1:3211` instead of `CONVEX_URL`.
 
 ## API Usage
 
