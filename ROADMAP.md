@@ -43,7 +43,7 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 - `YouTwo-1` (done): import, this roadmap, lockfiles, `delete_observations` and `check_convex_project` fixes, Gradio app starts again, README setup fixes.
 - `YouTwo-2` (done): convex-test unit tests (`cd backend && npm test`) replace `tests:runTests`; pytest for the Python fixes; committed `convex/_generated`; GitHub Actions CI (`.github/workflows/ci.yml`, runs once applied upstream).
 - `YouTwo-3` (done): cut the noise listed above (website, notebooks, plan, requirements files, other projects' MCP scripts, `embeddings.ts`, `patches.ts`, the Modal deploy): 95 files to 61.
-- `YouTwo-4` (planned): bearer-token auth on the HTTP API.
+- `YouTwo-4` (done): bearer-token auth (`YOUTWO_API_TOKEN`) on every HTTP route, Python clients send it; fix the RAG sync calling a missing `/metadata` route.
 - `YouTwo-5` (planned): a thin MCP server over the HTTP API, tested offline.
 - `YouTwo-6` (planned): knowledge-graph-only core; drop the RAG demo; new README.
 
@@ -61,6 +61,7 @@ git am /tmp/youtwo-N/*.patch
 ## Needs Tan
 
 - Pinned `gradio[mcp]<6` instead of porting the app to gradio 6; that pin also holds `mcp` at 1.10.1.
+- `YouTwo-4` changes the API: after applying it, run `npx convex env set YOUTWO_API_TOKEN <token>` on the deployment and put the same token in `.env`, or every route returns 500.
 - Not verified: anything needing Vectara, Nebius or Modal keys (RAG answers, agent runs, deploys) or a Convex cloud deployment.
 - `YouTwo-3` deletes the Modal deploy instead of fixing it, since a fix can't be tested without a Modal account. Decide whether the Modal/Gradio demo should come back online, or whether the knowledge-graph MCP server is the product.
 - The GitHub repo homepage points at the Docusaurus template site; change or clear it in the repo settings.
