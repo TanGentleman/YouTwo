@@ -39,9 +39,8 @@ def check_convex_project(project_dir: str) -> bool:
     if not Path(project_dir).is_dir():
         print(f"Directory does not exist: {project_dir}")
         return False
-    files = Path(project_dir).iterdir()
-    has_pkg = "package.json" in files
-    has_convex = "convex" in files and Path(project_dir, "convex").is_dir()
+    has_pkg = Path(project_dir, "package.json").is_file()
+    has_convex = Path(project_dir, "convex").is_dir()
     print(
         f"Project dir: {project_dir}\nHas package.json: {has_pkg}\nHas convex/: {has_convex}"
     )

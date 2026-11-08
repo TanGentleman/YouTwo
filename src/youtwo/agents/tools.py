@@ -8,7 +8,7 @@ from youtwo.memory.visualize import visualize_from_dict, visualize_knowledge_gra
 from youtwo.rag.vectara_client import VectaraClient
 from youtwo.schemas import BriefEntity, BriefRelation, Observation
 from youtwo.server.server import get_graph_data, initialize_mcp, run_convex_function
-from youtwo.server.utils import async_convex_api_call, get_convex_url
+from youtwo.server.utils import async_convex_api_call, get_convex_url, to_deletions
 
 DIRECT_HTTP = True
 
@@ -418,7 +418,7 @@ def delete_observations(observations: list[Observation]) -> dict | None:
             async_convex_api_call(
                 "observations",
                 "DELETE",
-                data={"deletions": observations},
+                data={"deletions": to_deletions(observations)},
                 deployment_url=direct_url,
             )
         )
@@ -427,7 +427,7 @@ def delete_observations(observations: list[Observation]) -> dict | None:
         MCP_KEY = deployment_info["deploymentSelector"]
         return asyncio.run(
             run_convex_function(
-                MCP_KEY, "entities:deleteObservations", {"observations": observations}
+                MCP_KEY, "entities:deleteObservations", {"deletions": to_deletions(observations)}
             )
         )
 

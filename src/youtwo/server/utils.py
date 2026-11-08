@@ -49,6 +49,14 @@ def parse_convex_result(res: CallToolResult) -> Any | None:
         return res
 
 
+def to_deletions(observations: list[dict]) -> list[dict]:
+    """Map Observation dicts to the shape entities:deleteObservations expects."""
+    return [
+        {"entityName": o["entityName"], "observations": o["contents"]}
+        for o in observations
+    ]
+
+
 def get_convex_url(force_load_dotenv: bool = False) -> str:
     if force_load_dotenv:
         from dotenv import load_dotenv

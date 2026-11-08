@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 
 from youtwo.schemas import BriefEntity, BriefRelation, Observation
 from youtwo.server.server import get_function_spec, initialize_mcp, run_convex_function
+from youtwo.server.utils import to_deletions
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,7 +98,9 @@ async def delete_observations(observations: list[Observation]) -> Any:
     Delete observations from existing entities.
     """
     return await run_convex_function(
-        MCP_KEY, "entities:deleteObservations", {"observations": observations}
+        MCP_KEY,
+        "entities:deleteObservations",
+        {"deletions": to_deletions(observations)},
     )
 
 
