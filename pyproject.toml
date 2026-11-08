@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "youtwo"
 version = "0.1.0"
 authors = [{name = "Tan"}]
-description = "Memory layer and RAG service"
+description = "Knowledge-graph memory for AI agents: a Convex backend and an MCP server"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -17,31 +17,15 @@ classifiers = [
 
 dependencies = [
     "httpx",
-    "mcp",
-    "smolagents",
-    "requests",
+    "mcp>=1.10,<2",
     "python-dotenv",
 ]
 
 [project.scripts]
 youtwo-mcp = "youtwo.mcp_server:main"
 
-[project.optional-dependencies]
-frontend = [
-    "gradio[mcp]>=5.33,<6",
-]
-graph = [
-    "langgraph",
-    "langchain_core", 
-    "matplotlib",
-    "networkx",
-    "graphviz"
-]
-
-all = [
-    "youtwo[frontend]",
-    "youtwo[graph]"
-]
+[dependency-groups]
+dev = ["pytest>=8"]
 
 # Ruff config
 
@@ -64,6 +48,3 @@ per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 [tool.ruff.format]
 docstring-code-format = true
 docstring-code-line-length = 80
-
-[dependency-groups]
-dev = ["pytest>=8"]

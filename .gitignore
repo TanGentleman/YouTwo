@@ -4,8 +4,5 @@ __pycache__/
 .DS_Store
 .venv/
 node_modules/
-data/
-upload_results.json
 src/youtwo.egg-info/
-knowledge_graph-*.json
 .convex/
