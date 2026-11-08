@@ -23,7 +23,6 @@ test("every route needs the bearer token", async () => {
     ["POST", "/relations"], ["DELETE", "/relations"],
     ["POST", "/observations"], ["DELETE", "/observations"],
     ["GET", "/graph"], ["GET", "/search?q=a"], ["GET", "/nodes?names=a"],
-    ["POST", "/sources"], ["GET", "/sources/info"],
   ];
   for (const [method, path] of routes) {
     expect((await t.fetch(path, { method })).status, `${method} ${path}`).toBe(401);
@@ -90,13 +89,4 @@ test("malformed requests get a 400", async () => {
   expect((await t.fetch("/relations", json("DELETE", {}))).status).toBe(400);
   expect((await t.fetch("/search", get)).status).toBe(400);
   expect((await t.fetch("/nodes", get)).status).toBe(400);
-});
-
-test("sources are recorded once and listed in /sources/info", async () => {
-  const t = convexTest(schema, modules);
-  const source = { filename: "notes.md", title: "Notes", type: "Vectara", partsCount: 2 };
-  expect((await t.fetch("/sources", json("POST", { sources: [source] }))).status).toBe(200);
-  await t.fetch("/sources", json("POST", { sources: [source] }));
-  const info = await (await t.fetch("/sources/info", get)).json();
-  expect(info.sourceInfo.map((s: { filename: string }) => s.filename)).toEqual(["notes.md"]);
 });

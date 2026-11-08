@@ -99,3 +99,15 @@ test("deleteEntities on both ends of a relation", async () => {
   expect(results.every((r) => r.success)).toBe(true);
   expect(await t.query(internal.knowledge.readGraph, {})).toEqual({ entities: [], relations: [] });
 });
+
+test("entities written with legacy journalIds still read and update", async () => {
+  const t = convexTest(schema, modules);
+  await t.run((ctx) =>
+    ctx.db.insert("entities", { ...ada, updatedAt: 0, journalIds: ["jn79hwrxfznrcgy1xsw1qzb1yd8hvfr2"] }),
+  );
+  await t.mutation(internal.entities.addObservations, {
+    observations: [{ entityName: "Ada", contents: ["Likes tea"] }],
+  });
+  const graph = await t.query(internal.knowledge.readGraph, {});
+  expect(graph.entities[0].observations).toEqual(["Writes Rust", "Likes tea"]);
+});

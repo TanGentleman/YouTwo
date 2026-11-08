@@ -17,36 +17,6 @@ type RelationResult = {
 
 const KEEP_EMPTY_KNOWLEDGE = false;
 
-export const createRelationsFromIds = internalMutation({
-  args: {
-    relations: v.array(v.object({
-      from: v.id("entities"),
-      to: v.id("entities"),
-      relationType: v.string(),
-      journalIds: v.optional(v.array(v.id("journals"))),
-    })),
-  },
-  handler: async (ctx, args) => {
-    // 1. Insert new relations in batch
-    const newRelations = await internalCreateRelations(ctx, {
-      relations: args.relations.map(rel => ({
-        from: rel.from,
-        to: rel.to,
-        relationType: rel.relationType,
-        journalIds: rel.journalIds,
-      })),
-    });
-
-    // 2. Update knowledge entries
-    await updateKnowledgeWithNewRelations(ctx, {
-      relations: newRelations,
-    });
-
-    return newRelations;
-  },
-});
-
-// Internal functions should have side effects to knowledge table!
 export const internalCreateRelations = async (ctx: MutationCtx,
   args: 
   {
@@ -105,24 +75,6 @@ export const internalCreateRelations = async (ctx: MutationCtx,
     }
     return results;
 }
-
-export const internalUpdateRelations = async (ctx: MutationCtx, args: {
-  relations: { id: Id<"relations">; updates: Partial<Doc<"relations">> }[]
-}) => {
-  const results: Id<"relations">[] = [];
-  for (const relation of args.relations) {
-    await ctx.db.patch(relation.id, relation.updates);
-    results.push(relation.id);
-  }
-  const operation = {
-    operation: "update" as const,
-    table: "relations" as const,
-    success: true,
-    message: `Updated ${results.length} relations`,
-  };
-  await internalCreateOperations(ctx, { operations: [operation] });
-  return results;
-};
 
 export const internalDeleteRelations = async (ctx: MutationCtx,
   args: {
@@ -257,7 +209,6 @@ const constructValidRelations = async (ctx: MutationCtx, args: {
     from: string;
     to: string;
     relationType: string;
-    journalIds?: Id<"journals">[];
   }[]
   }) => {
   const invalidResults: RelationResult[] = [];
@@ -321,7 +272,6 @@ const constructValidRelations = async (ctx: MutationCtx, args: {
         from: fromEntity._id,
         to: toEntity._id,
         relationType: rel.relationType,
-        journalIds: rel.journalIds,
       });
     }
     return {
@@ -340,7 +290,6 @@ export const createRelations = internalMutation({
         from: v.string(),
         to: v.string(),
         relationType: v.string(),
-        journalIds: v.optional(v.array(v.id("journals"))),
       })
     ),
   },
