@@ -33,8 +33,8 @@ Cut on `YouTwo-3`: `project-website/` (Docusaurus template: 2019/2021 sample pos
 (duplicate `pyproject.toml`), `scripts/alert_mcp.py` and `scripts/limitless_mcp.py` (servers for
 other projects; `/ping` isn't in this backend), `backend/convex/embeddings.ts` (random mock
 vectors), `patches.ts` (one-off migration), the broken Modal
-deploy. Cut on `YouTwo-6`: the Vectara RAG, Gradio app, smolagents and langgraph code. Still in
-the backend: the journals/sources/metadata tables that only the Vectara sync used.
+deploy. Cut on `YouTwo-6`: the Vectara RAG, Gradio app, smolagents and langgraph code. Cut on
+`YouTwo-7`: the journals/sources/metadata tables that only the Vectara sync used.
 
 ## Stack
 
@@ -46,6 +46,7 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 - `YouTwo-4` (done): bearer-token auth (`YOUTWO_API_TOKEN`) on every HTTP route, Python clients send it; fix the RAG sync calling a missing `/metadata` route.
 - `YouTwo-5` (done): `youtwo-mcp`, a stdio MCP server over the HTTP API with the reference memory server's tools, tested offline and against a local backend; replaces `scripts/run_mcp*.py`.
 - `YouTwo-6` (done): cut the Python side to `youtwo-mcp` (drop the Gradio/Vectara/smolagents/langgraph demo; deps down to httpx, mcp, python-dotenv; mcp 1.10 to 1.30); README rewritten around the MCP server.
+- `YouTwo-7` (done): drop the journals/sources/metadata tables, the `/sources` routes and uncalled internal functions; old documents still validate (tested by pushing over a local backend with rows in every old table).
 
 ## Applying a branch upstream
 
@@ -62,6 +63,7 @@ git am /tmp/youtwo-N/*.patch
 
 - `YouTwo-1` pins `gradio[mcp]<6` instead of porting the app to gradio 6 (that pin holds `mcp` at 1.10.1). `YouTwo-6` drops gradio and pins `mcp>=1.10,<2`; mcp 2.x changes the server API.
 - `YouTwo-4` changes the API: after applying it, run `npx convex env set YOUTWO_API_TOKEN <token>` on the deployment and put the same token in `.env`, or every route returns 500.
+- `YouTwo-7` changes the schema. Convex keeps the rows of the dropped tables; clear them in the dashboard if wanted. `journalIds` stays as an optional unused field so existing entities validate; removing it needs a migration.
 - Not verified: anything needing Vectara, Nebius or Modal keys (RAG answers, agent runs, deploys) or a Convex cloud deployment.
 - `YouTwo-3` deletes the Modal deploy instead of fixing it, since a fix can't be tested without a Modal account. `YouTwo-6` goes further and treats the knowledge-graph MCP server as the product, deleting the Gradio/RAG demo. Stop at `-5` to keep the demo.
 - The GitHub repo homepage points at the Docusaurus template site; change or clear it in the repo settings.
