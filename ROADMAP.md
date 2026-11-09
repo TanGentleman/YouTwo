@@ -50,20 +50,6 @@ Each branch is based on the one before it in TanGentleman/kranti-sandbox.
 - `YouTwo-8` (done): mcp 1.30 to 2.3.0 (`FastMCP` is now `MCPServer`; HTTP errors raise `ToolError` so the status still reaches the client; tests use `mcp.Client`); `typing_extensions.TypedDict`, which pydantic needs on Python < 3.12; every dependency pinned exactly; CI on actions v7 and setup-uv v10.3.3 with Node 22.23.4/26.13.0 and Python 3.10.22/3.14.10; README quickstart on a local anonymous backend; the boilerplate `backend/README.md` removed.
 - `YouTwo-9`: README cut to 91 words; details moved to IMPLEMENTATION.md.
 
-## Applying the stack upstream
-
-The import commit is `8358445`. In a clean upstream checkout at 703927e, next to `kranti-sandbox`:
-
-```bash
-git -C ../kranti-sandbox fetch origin
-git -C ../kranti-sandbox format-patch --relative=YouTwo -o /tmp/youtwo 8358445..origin/YouTwo-9
-git am /tmp/youtwo/*.patch
-```
-
-To stop at an earlier branch, use `8358445..origin/YouTwo-<n>`. No `--keep-cr` needed. Checked on
-fresh clones at `-9`: the result matches `origin/YouTwo-9:YouTwo`, and the Tests commands in
-IMPLEMENTATION.md pass.
-
 ## Needs Tan
 
 - `YouTwo-4` changes the API: after applying it, run `npx convex env set YOUTWO_API_TOKEN <token>` on the deployment and put the same token in `.env`, or every route returns 500.
