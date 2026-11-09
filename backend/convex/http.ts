@@ -1,7 +1,30 @@
 import { httpRouter } from "convex/server";
 import { internal } from "./_generated/api";
-import { httpAction } from "./_generated/server";
+import { env, httpAction, type ActionCtx } from "./_generated/server";
 const http = httpRouter();
+
+const unauthorized = (status: number, error: string) =>
+  new Response(JSON.stringify({ error }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+
+function sameSecret(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Every route needs `Authorization: Bearer $YOUTWO_API_TOKEN`. */
+function authed(handler: (ctx: ActionCtx, request: Request) => Promise<Response>) {
+  return httpAction(async (ctx, request) => {
+    if (!env.YOUTWO_API_TOKEN) return unauthorized(500, "YOUTWO_API_TOKEN not configured");
+    const header = request.headers.get("Authorization") ?? "";
+    if (!sameSecret(header, `Bearer ${env.YOUTWO_API_TOKEN}`)) return unauthorized(401, "unauthorized");
+    return handler(ctx, request);
+  });
+}
 
 /**
  * Get entities via HTTP API
@@ -9,7 +32,7 @@ const http = httpRouter();
 http.route({
   path: "/entities",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     try {
       const result = await ctx.runQuery(internal.entities.getBriefEntities, {});
       return new Response(JSON.stringify(result), {
@@ -30,7 +53,7 @@ http.route({
 http.route({
   path: "/entities",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.entities || !Array.isArray(body.entities)) {
@@ -59,7 +82,7 @@ http.route({
 http.route({
   path: "/relations",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.relations || !Array.isArray(body.relations)) {
@@ -88,7 +111,7 @@ http.route({
 http.route({
   path: "/observations",
   method: "POST",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.observations || !Array.isArray(body.observations)) {
@@ -117,7 +140,7 @@ http.route({
 http.route({
   path: "/graph",
   method: "GET",
-  handler: httpAction(async (ctx) => {
+  handler: authed(async (ctx) => {
     try {
       const result = await ctx.runQuery(internal.knowledge.readGraph, {});
       return new Response(JSON.stringify(result), {
@@ -138,7 +161,7 @@ http.route({
 http.route({
   path: "/search",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const url = new URL(request.url);
     const query = url.searchParams.get("q");
     if (!query) {
@@ -168,7 +191,7 @@ http.route({
 http.route({
   path: "/nodes",
   method: "GET",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const url = new URL(request.url);
     const namesParam = url.searchParams.get("names") || "";
     const names = namesParam.split(",").filter(Boolean);
@@ -202,7 +225,7 @@ http.route({
 http.route({
   path: "/entities",
   method: "DELETE",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.entityNames || !Array.isArray(body.entityNames)) {
@@ -236,7 +259,7 @@ http.route({
 http.route({
   path: "/observations",
   method: "DELETE",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.deletions || !Array.isArray(body.deletions)) {
@@ -270,7 +293,7 @@ http.route({
 http.route({
   path: "/relations",
   method: "DELETE",
-  handler: httpAction(async (ctx, request) => {
+  handler: authed(async (ctx, request) => {
     const body = await request.json();
     
     if (!body.relations || !Array.isArray(body.relations)) {
@@ -297,76 +320,6 @@ http.route({
     }
   }),
 });
-
-/**
- * Create sources via HTTP API
- */
-
-http.route({
-  path: "/sources",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const body = await request.json();
-    if (!body.sources || !Array.isArray(body.sources)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request body, sources array required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
-    }
-    try {
-      const result = await ctx.runMutation(internal.sources.createSources, { 
-        sources: body.sources 
-      });
-      if (result.length === 0) {
-        return new Response(JSON.stringify({ message: "No new vectara ids to create sources for" }), {
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      return new Response(JSON.stringify(result), {
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: "Convex mutation failed" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-  }),
-});
-
-/**
- * Get vectara source info
- */
-http.route({
-  path: "/sources/info",
-  method: "GET",
-  handler: httpAction(async (ctx) => {
-    try {
-      const metadata = await ctx.runMutation(internal.metadata.getSafeMetadata);
-      if (!metadata) {
-        return new Response(JSON.stringify({ error: "No metadata found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      return new Response(JSON.stringify({ sourceInfo: metadata.sourceInfo }), {
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (e) {
-      return new Response(JSON.stringify({ error: "Failed to get latest metadata" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-  }),
-});
-
-
-
-
 
 // Export the HTTP router
 export default http; 

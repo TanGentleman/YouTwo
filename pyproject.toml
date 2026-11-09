@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "youtwo"
 version = "0.1.0"
 authors = [{name = "Tan"}]
-description = "Memory layer and RAG service"
+description = "Knowledge-graph memory for AI agents: a Convex backend and an MCP server"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -16,32 +16,17 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp",
-    "smolagents",
-    "requests",
-    "python-dotenv",
+    "httpx==0.28.1",
+    "mcp==2.3.0",
+    "python-dotenv==1.2.4",
+    "typing-extensions==4.16.0",
 ]
 
-[project.optional-dependencies]
-frontend = [
-    "gradio",
-]
-deployment = [
-    "modal",
-]
-graph = [
-    "langgraph",
-    "langchain_core", 
-    "matplotlib",
-    "networkx",
-    "graphviz"
-]
+[project.scripts]
+youtwo-mcp = "youtwo.mcp_server:main"
 
-all = [
-    "youtwo[frontend]",
-    "youtwo[deployment]",
-    "youtwo[graph]"
-]
+[dependency-groups]
+dev = ["pytest==9.2.0"]
 
 # Ruff config
 
@@ -53,13 +38,13 @@ exclude = [
     "**/node_modules",
     "**/dist",
     "**/backend",
-    "**/project-website"
 ]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "C", "N", "Q", "S", "T", "B", "PL"]
 ignore = ["E501"]
 isort = { known-first-party = ["youtwo"] }
+per-file-ignores = { "tests/*" = ["S101", "S105", "S106", "S107"] }
 
 [tool.ruff.format]
 docstring-code-format = true

@@ -3,10 +3,6 @@
 __pycache__/
 .DS_Store
 .venv/
-.docusaurus/
-backend/convex/_generated/
 node_modules/
-backend/package-lock.json
-*.json
 src/youtwo.egg-info/
-uv.lock
+.convex/

@@ -51,7 +51,6 @@ export const internalCreateEntities = async (ctx: MutationCtx, args: {
       name: entity.name,
       entityType: entity.entityType,
       observations: entity.observations ?? undefined,
-      journalIds: entity.journalIds ?? undefined,
       updatedAt: Date.now(),
     });
     results.push({
@@ -119,7 +118,6 @@ export const createEntities = internalMutation({
       name: v.string(),
       entityType: v.string(),
       observations: v.optional(v.array(v.string())),
-      journalIds: v.optional(v.array(v.id("journals"))),
     })),
   },
   handler: async (ctx, args): Promise<EntityResult[]> => {
@@ -135,7 +133,6 @@ export const createEntities = internalMutation({
           name: entity.name,
           entityType: entity.entityType,
           observations: entity.observations || [],
-          journalIds: entity.journalIds || [],
         });
       } else {
         // Note: In the future, allow same name if different entity types
@@ -345,72 +342,6 @@ export const deleteObservations = internalMutation({
       }
     }
     
-    return results;
-  },
-});
-
-
-/**
- * Update entities
- */
-export const addEntityUpdates = internalMutation({
-  args: {
-    entities: v.array(v.object({
-      id: v.id("entities"),
-      newObservations: v.optional(v.array(v.string())),
-      newJournalIds: v.optional(v.array(v.id("journals"))),
-    })),
-  },
-  handler: async (ctx, args): Promise<EntityResult[]> => {
-    // Group updates by entity ID to combine duplicates
-    const results: EntityResult[] = [];
-    const updatesMap = new Map<Id<"entities">, {observations: string[], journalIds: Id<"journals">[]}>();
-    const entityUpdates: {id: Id<"entities">, updates: {observations: string[], journalIds: Id<"journals">[]}}[] = [];
-    for (const entity of args.entities) {
-      if (!updatesMap.has(entity.id)) {
-        updatesMap.set(entity.id, {
-          observations: [],
-          journalIds: [],
-        });
-      }
-      const current = updatesMap.get(entity.id)!;
-      if (entity.newObservations) {
-        current.observations.push(...entity.newObservations);
-      }
-      if (entity.newJournalIds) {
-        current.journalIds.push(...entity.newJournalIds);
-      }
-    }
-    for (const [id, updates] of updatesMap.entries()) {
-      if (updates.observations.length === 0 && updates.journalIds.length === 0) {
-        console.warn(`Updates were empty for entity ${id}`);
-        continue;
-      }
-      const entity = await ctx.db.get(id);
-      if (!entity) {
-        results.push({
-          success: false,
-          name: "N/A",
-          reason: `Entity ${id} not found`,
-        });
-        continue;
-      }
-      console.log(`Updating entity ${entity.name} with ${updates.observations.length} observations and ${updates.journalIds.length} journal IDs`);
-      results.push({
-        success: true,
-        name: entity.name,
-        id,
-      });
-      entityUpdates.push({
-        id,
-        updates: {
-          observations: Array.from(new Set([...entity.observations, ...updates.observations])),
-          journalIds: Array.from(new Set([...(entity.journalIds || []), ...updates.journalIds])),
-        },
-      });
-
-    }
-    await internalUpdateEntities(ctx, { entities: entityUpdates });
     return results;
   },
 });

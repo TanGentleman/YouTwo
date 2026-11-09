@@ -1,20 +1,13 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
-export const sourceInfo = v.object({
-  filename: v.string(),
-  convexId: v.id('sources'),
-  // Optionally, either a list of strings or a list of numbers
-  parts: v.optional(v.union(v.array(v.string()), v.array(v.number()))),
-});
-
 // Entities are primary nodes in the knowledge graph
 export const entityDoc = v.object({
   name: v.string(), // Unique identifier for the entity
   entityType: v.string(), // Type classification (person, organization, event, etc.)
   observations: v.array(v.string()), // Atomic facts about this entity
   updatedAt: v.number(), // Timestamp when entity was last updated,
-  journalIds: v.array(v.id('journals')), // List of all journal IDs
+  journalIds: v.optional(v.array(v.string())), // Legacy, from the removed journals table; unused
 });
 
 // Relations define connections between entities
@@ -22,7 +15,7 @@ export const relationDoc = v.object({
   from: v.id('entities'), // Source entity ID
   to: v.id('entities'), // Target entity ID
   relationType: v.string(), // Relationship type in active voice (e.g., "works_at")
-  journalIds: v.optional(v.array(v.id('journals'))), // List of all journal IDs
+  journalIds: v.optional(v.array(v.string())), // Legacy, from the removed journals table; unused
 });
 
 // Only one knowledge entry per entity
@@ -31,40 +24,6 @@ export const knowledgeDoc = v.object({
   entity: v.id('entities'),
   relations: v.array(v.id('relations')),
   updatedAt: v.number(), // Timestamp when entity was last updated
-});
-
-// Distilled journal entries - first layer of memory
-export const journalsDoc = v.object({
-  title: v.string(),
-  markdown: v.string(),
-  startTime: v.number(),
-  endTime: v.number(),
-  embeddingId: v.union(v.id('markdownEmbeddings'), v.null()),
-  sources: v.array(sourceInfo),
-});
-
-// Vector embeddings for semantic search
-export const markdownEmbeddingDoc = v.object({
-  markdown: v.string(), // The text content being embedded
-  embedding: v.optional(v.array(v.number())), // Vector representation
-  journalId: v.id('journals'), // Reference to the journal entry
-});
-
-// The offset value will be named to partIndex
-export const sourcesDoc = v.object({
-  filename: v.string(),
-  type: v.string(),
-  title: v.string(),
-  partsCount: v.number(),
-  parts: v.optional(v.array(v.string())),
-});
-
-// Metadata stores system-wide information
-export const metadataDoc = v.object({
-  startTime: v.number(), // Earliest record timestamp
-  endTime: v.number(), // Latest record timestamp
-  journalIds: v.array(v.id('journals')), // List of all journal IDs
-  sourceInfo: v.array(sourceInfo), // List of all source info
 });
 
 // Operations log records system actions for debugging and monitoring
@@ -102,17 +61,7 @@ export default defineSchema({
   knowledge: defineTable(knowledgeDoc)
     .index("by_entity", ["entity"])
     .index("by_relations", ["relations"]),
-  
-  journals: defineTable(journalsDoc),
-  markdownEmbeddings: defineTable(markdownEmbeddingDoc),
-  //   .vectorIndex('by_embedding', {
-  //     vectorField: 'embedding',
-  //     dimensions: 1536, // OpenAI's embedding size
-  // }),
-  sources: defineTable(sourcesDoc)
-    .index("by_filename", ["filename"]),
-  
+
   // System tables
-  metadata: defineTable(metadataDoc),
   operations: defineTable(operationsDoc)
 });
